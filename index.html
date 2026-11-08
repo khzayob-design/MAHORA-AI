@@ -1,55 +1,326 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080d19"><title>MAHORA AI — نسخه آزمایشی</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080d19">
+<title>MAHORA AI</title>
 <style>
-:root{--bg:#080d19;--panel:#111a2b;--panel2:#0d1524;--gold:#e9bb55;--muted:#9ba8bb;--green:#12d58b;--red:#ff5263;--line:#26344b}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#14213a 0,#080d19 55%);color:#f5f7fb;font-family:Tahoma,Arial,sans-serif;min-height:100vh}
-.app{max-width:480px;margin:auto;padding:18px 15px 30px}.top{display:flex;align-items:center;justify-content:space-between;padding:12px 2px 20px}.brand{display:flex;gap:10px;align-items:center}.logo{width:43px;height:43px;border:1px solid #8d6a2d;border-radius:14px;display:grid;place-items:center;color:var(--gold);font-weight:bold;font-size:20px;box-shadow:0 0 22px #d6a33a22}.brand b{color:var(--gold);font-size:18px;letter-spacing:.5px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:4px}.pill{border:1px solid #12694f;color:var(--green);background:#08271f;padding:8px 12px;border-radius:30px;font-size:11px}
-.card{background:linear-gradient(145deg,#152137,#0d1524);border:1px solid var(--line);border-radius:20px;padding:17px;margin-bottom:13px;box-shadow:0 12px 30px #0003}.center{text-align:center}.eyebrow{font-size:11px;color:var(--muted)}h1{font-size:23px;margin:12px 0 8px}h2{font-size:15px;margin:0 0 14px}.sub{font-size:12px;color:var(--muted);line-height:1.8}.robot{font-size:55px;margin:12px auto 4px;filter:drop-shadow(0 0 15px #d6a33a66)}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#09111f;border:1px solid #202e45;border-radius:15px;padding:14px}.metric small{display:block;color:var(--muted);font-size:10px;margin-bottom:10px}.metric strong{font-size:16px;color:var(--gold)}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}.switch{width:48px;height:27px;border:0;border-radius:20px;background:#43516a;position:relative;cursor:pointer}.switch:after{content:"";position:absolute;width:21px;height:21px;top:3px;right:3px;background:white;border-radius:50%;transition:.2s}.switch.on{background:#0c9c6a}.switch.on:after{right:24px}.btn{width:100%;border:0;border-radius:14px;padding:14px;font-weight:bold;font-size:14px;cursor:pointer;margin-top:10px;background:linear-gradient(90deg,#f1ce77,#c89435);color:#17120a}.btn.secondary{background:#17243a;color:#f5f7fb;border:1px solid #344560}.btn.danger{background:transparent;color:var(--red);border:1px solid #a52d42}.trade{border-color:#087c59;box-shadow:0 0 24px #0bd28a16}.green{color:var(--green)!important}.red{color:var(--red)!important}.hidden{display:none}.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}.nav button{background:transparent;border:1px solid var(--line);border-radius:13px;padding:12px 4px;color:var(--muted);font-size:11px;cursor:pointer}.nav button.active{color:var(--gold);border-color:#987333;background:#211b10}.notice{font-size:10px;line-height:1.9;color:#d5b978;background:#241e12;border:1px solid #65502a;border-radius:12px;padding:11px;margin-top:12px}.field{width:100%;padding:13px;border-radius:12px;border:1px solid var(--line);background:#080f1c;color:white;margin:8px 0;font:inherit}.field::placeholder{color:#78869a}.fakechart{height:110px;display:flex;align-items:end;gap:6px;padding:10px 0;border-bottom:1px dashed #33435b}.fakechart i{display:block;flex:1;background:linear-gradient(#16d997,#087a5c);border-radius:4px 4px 0 0}.foot{text-align:center;color:#64738a;font-size:10px;margin:18px 0 0}
+:root{
+--bg:#080d19;--panel:#111a2b;--gold:#e9bb55;
+--muted:#9ba8bb;--green:#12d58b;--red:#ff5263;
+--line:#26344b;
+}
+*{box-sizing:border-box}
+body{
+margin:0;background:radial-gradient(ellipse at top,#14213a,#080d19 65%);
+color:#f5f7fb;font-family:Tahoma,Arial,sans-serif;
+}
+.app{max-width:480px;margin:auto;padding:18px 15px 35px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:44px;height:44px;border:1px solid #987333;
+border-radius:14px;display:grid;place-items:center;color:var(--gold);font-size:22px}
+.brand b{color:var(--gold);font-size:18px}
+.brand small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
+.pill{border:1px solid #12694f;color:var(--green);background:#08271f;
+padding:8px 10px;border-radius:30px;font-size:10px}
+.card{background:linear-gradient(145deg,#152137,#0d1524);
+border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px}
+h1{font-size:22px;margin:12px 0}
+h2{font-size:15px;margin:0 0 13px}
+.sub{font-size:11px;color:var(--muted);line-height:1.9}
+.center{text-align:center}
+.robot{font-size:48px;margin:12px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.metric{background:#09111f;border:1px solid #202e45;
+border-radius:13px;padding:13px;min-width:0}
+.metric small{display:block;color:var(--muted);font-size:10px;margin-bottom:9px}
+.metric strong{font-size:14px;color:var(--gold);overflow-wrap:anywhere}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.switch{width:46px;height:26px;border:0;border-radius:20px;
+background:#43516a;position:relative;cursor:pointer;flex-shrink:0}
+.switch:after{content:"";position:absolute;width:20px;height:20px;
+top:3px;right:3px;background:white;border-radius:50%;transition:.2s}
+.switch.on{background:#0c9c6a}
+.switch.on:after{right:23px}
+.engine{background:#09111f;border:1px solid var(--line);
+border-radius:15px;padding:14px;margin-bottom:10px}
+.engine.active{border-color:var(--green)}
+.engine h3{color:var(--gold);font-size:14px;margin:0 0 9px}
+.engine-info{font-size:10px;color:var(--muted);line-height:2}
+.btn{width:100%;border:0;border-radius:13px;padding:13px;
+font-weight:bold;font-size:13px;cursor:pointer;margin-top:10px;
+background:linear-gradient(90deg,#f1ce77,#c89435);color:#17120a}
+.secondary{background:#17243a;color:white;border:1px solid #344560}
+.danger{background:transparent;color:var(--red);border:1px solid #a52d42}
+.field{width:100%;padding:12px;border-radius:11px;
+border:1px solid var(--line);background:#080f1c;color:white;
+margin:7px 0;font:inherit}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
+.nav button{background:transparent;border:1px solid var(--line);
+border-radius:12px;padding:12px 3px;color:var(--muted);font-size:11px}
+.nav button.active{color:var(--gold);border-color:#987333}
+.notice{font-size:10px;line-height:2;color:#d5b978;
+background:#241e12;border:1px solid #65502a;
+border-radius:12px;padding:11px;margin-top:13px}
+.hidden{display:none!important}
+.green{color:var(--green)!important}
+.red{color:var(--red)!important}
+.trade-item{border-bottom:1px solid var(--line);padding:12px 0;font-size:11px;line-height:2}
+.foot{text-align:center;color:#64738a;font-size:10px;margin:20px}
 </style>
 </head>
-<body><main class="app">
-<header class="top"><div class="brand"><div class="logo">M</div><div><b>MAHORA AI</b><small>SMART TRADING ASSISTANT</small></div></div><span class="pill">● نسخه آزمایشی</span></header>
+<body>
+<main class="app">
+
+<header class="top">
+<div class="brand">
+<div class="logo">M</div>
+<div><b>MAHORA AI</b><small>SMART TRADING ASSISTANT</small></div>
+</div>
+<span class="pill">● نسخه آزمایشی</span>
+</header>
 
 <section id="home">
- <div class="card center" id="idle">
-  <div class="eyebrow">وضعیت ربات</div><div class="robot">🤖</div>
-  <h1>در حال بررسی بازار</h1><div class="sub">هنوز فرصت معاملاتی معتبر پیدا نشده است</div>
- </div>
- <div class="card trade hidden" id="active">
-  <div class="row"><span class="eyebrow">معامله آزمایشی فعال</span><span class="pill">● باز</span></div>
-  <h1 class="center">BTC / USDT</h1><div class="center green" style="font-size:20px;font-weight:bold">خرید (LONG)</div>
-  <div class="fakechart" aria-label="نمودار نمایشی"><i style="height:30%"></i><i style="height:48%"></i><i style="height:39%"></i><i style="height:65%"></i><i style="height:54%"></i><i style="height:78%"></i><i style="height:70%"></i><i style="height:92%"></i><i style="height:83%"></i><i style="height:100%"></i></div>
-  <div class="metrics">
-   <div class="metric"><small>قیمت ورود</small><strong>۶۷٬۵۰۰</strong></div><div class="metric"><small>حد سود</small><strong class="green">۶۸٬۵۰۰</strong></div>
-   <div class="metric"><small>حد ضرر</small><strong class="red">۶۶٬۹۰۰</strong></div><div class="metric"><small>سود و زیان شناور</small><strong class="green" id="pnl">+۰.۸٪</strong></div>
-  </div>
-  <button class="btn danger" onclick="closeTrade()">بستن معامله آزمایشی</button>
- </div>
- <div class="metrics">
-  <div class="metric"><small>موجودی آزمایشی</small><strong>۱۰۰٬۰۰۰٬۰۰۰ تومان</strong></div>
-  <div class="metric"><small>سود و زیان امروز</small><strong id="today">۰ تومان</strong></div>
- </div>
- <div class="card" style="margin-top:13px"><div class="row"><div><b>معامله خودکار</b><div class="sub">فقط در محیط شبیه‌سازی</div></div><button id="auto" class="switch on" aria-label="روشن یا خاموش کردن معامله خودکار" onclick="toggleAuto()"></button></div></div>
- <div class="card"><div class="eyebrow">آخرین وضعیت</div><p class="sub" id="status">منتظر فرصت مناسب برای ورود — هیچ سفارش واقعی ارسال نمی‌شود.</p><button class="btn secondary" onclick="demoTrade()">نمایش یک معامله آزمایشی</button></div>
- <button class="btn danger" onclick="stopBot()">توقف ربات آزمایشی</button>
+
+<div class="card center">
+<div class="sub">وضعیت سیستم</div>
+<div class="robot">🤖</div>
+<h1 id="botStatus">آماده شروع معاملات</h1>
+<div class="sub">سه موتور معاملاتی مستقل</div>
+</div>
+
+<div class="metrics">
+<div class="metric">
+<small>موجودی آزمایشی</small>
+<strong id="balance">۱٬۰۰۰٬۰۰۰ ریال</strong>
+</div>
+<div class="metric">
+<small>سود و زیان کل</small>
+<strong id="totalPnl">۰ ریال</strong>
+</div>
+<div class="metric">
+<small>تعداد معاملات</small>
+<strong id="tradeCount">۰</strong>
+</div>
+<div class="metric">
+<small>موتورهای فعال</small>
+<strong id="engineCount">۰ از ۳</strong>
+</div>
+</div>
+
+<div class="card" style="margin-top:13px">
+<h2>موتورهای معاملاتی</h2>
+
+<div class="engine" id="e1">
+<div class="row">
+<h3>⚡ Scalping</h3>
+<button class="switch" id="s1" onclick="toggleEngine(0)"></button>
+</div>
+<div class="engine-info">معاملات سریع · بررسی فرصت‌های کوتاه‌مدت</div>
+<div class="engine-info">وضعیت: <span id="st1">خاموش</span></div>
+</div>
+
+<div class="engine" id="e2">
+<div class="row">
+<h3>📊 Day Trading</h3>
+<button class="switch" id="s2" onclick="toggleEngine(1)"></button>
+</div>
+<div class="engine-info">معاملات روزانه · بررسی روند همان روز</div>
+<div class="engine-info">وضعیت: <span id="st2">خاموش</span></div>
+</div>
+
+<div class="engine" id="e3">
+<div class="row">
+<h3>📈 Swing Trading</h3>
+<button class="switch" id="s3" onclick="toggleEngine(2)"></button>
+</div>
+<div class="engine-info">معاملات نوسانی · بررسی روند میان‌مدت</div>
+<div class="engine-info">وضعیت: <span id="st3">خاموش</span></div>
+</div>
+
+<button class="btn" onclick="startPaper()">شروع معاملات آزمایشی</button>
+<button class="btn secondary" onclick="stopAll()">خاموش کردن همه موتورها</button>
+</div>
+
+<div class="card">
+<h2>آخرین وضعیت</h2>
+<div class="sub" id="status">برای شروع، حداقل یک موتور را روشن کن.</div>
+<button class="btn secondary" onclick="demoTrade()">ثبت معامله آزمایشی</button>
+</div>
+
+<div class="card">
+<h2>معاملات باز</h2>
+<div id="openTrades" class="sub">معامله بازی وجود ندارد.</div>
+</div>
+
 </section>
 
-<section id="history" class="hidden"><div class="card"><h2>تاریخچه معاملات</h2><p class="sub" id="historyText">هنوز معامله‌ای در این نسخه آزمایشی ثبت نشده است.</p></div></section>
-<section id="settings" class="hidden"><div class="card"><h2>اتصال صرافی</h2><div class="row"><b>آبان‌تتر</b><span class="pill" style="color:#f0c76d;border-color:#70582a;background:#241e12">متصل نشده</span></div><p class="sub">اتصال واقعی هنوز در این نمونه فعال نیست. برای نسخه بعد، اتصال امن از طریق API رسمی و با مجوزهای محدود پیاده‌سازی می‌شود.</p><button class="btn secondary" onclick="alert('این قابلیت در نسخه نمایشی غیرفعال است.')">اتصال حساب (به‌زودی)</button></div>
- <div class="card"><h2>تنظیمات ریسک</h2><div class="row"><span class="sub">حالت معامله</span><b>Paper Trading</b></div><div class="row" style="margin-top:12px"><span class="sub">برداشت وجه</span><b class="red">غیرفعال</b></div></div></section>
+<section id="history" class="hidden">
+<div class="card">
+<h2>تاریخچه معاملات</h2>
+<div id="historyList" class="sub">هنوز معامله‌ای ثبت نشده است.</div>
+</div>
+</section>
 
-<nav class="nav"><button class="active" onclick="tab('home',this)">⌂ خانه</button><button onclick="tab('history',this)">◷ تاریخچه</button><button onclick="tab('settings',this)">⚙ تنظیمات</button></nav>
-<div class="notice">این نسخه فقط نمونه تعاملی و نمایشی است؛ به آبان‌تتر وصل نیست، سفارش واقعی ثبت نمی‌کند و سود آن قابل برداشت نیست.</div>
-<div class="foot">MAHORA AI · DEMO BUILD</div>
+<section id="settings" class="hidden">
+<div class="card">
+<h2>تنظیمات مدیریت ریسک</h2>
+<label class="sub">ریسک هر معامله (درصد)</label>
+<input id="risk" class="field" type="number" value="1" min="0.1" max="2" step="0.1">
+<label class="sub">کارمزد فرضی هر سمت معامله (درصد)</label>
+<input id="fee" class="field" type="number" value="0.1" min="0" max="2" step="0.01">
+<button class="btn" onclick="saveSettings()">ذخیره تنظیمات</button>
+</div>
+<div class="card">
+<h2>اتصال صرافی</h2>
+<div class="row"><b>آبان‌تتر</b><span class="pill">متصل نشده</span></div>
+<p class="sub">اتصال واقعی هنوز پیاده‌سازی نشده است. هیچ کلید API در این نسخه دریافت نمی‌شود.</p>
+</div>
+<div class="card">
+<h2>مشخصات حساب</h2>
+<div class="sub">موجودی اولیه: ۱٬۰۰۰٬۰۰۰ ریال</div>
+<div class="sub">نوع حساب: Paper Trading</div>
+<div class="sub">برداشت وجه: غیرفعال</div>
+</div>
+</section>
+
+<nav class="nav">
+<button class="active" onclick="tab('home',this)">⌂ خانه</button>
+<button onclick="tab('history',this)">◷ تاریخچه</button>
+<button onclick="tab('settings',this)">⚙ تنظیمات</button>
+</nav>
+
+<div class="notice">
+این نسخه فقط شبیه‌ساز است. قیمت‌ها و معاملات واقعی دریافت نمی‌شوند.
+هیچ سفارش واقعی ارسال نمی‌شود و سود و زیان نمایشی است.
+</div>
+<div class="foot">MAHORA AI · PAPER TRADING</div>
 </main>
+
 <script>
-let auto=true,active=false,stopped=false;
-function toggleAuto(){auto=!auto;document.getElementById('auto').classList.toggle('on',auto);document.getElementById('status').textContent=auto?'معامله خودکار آزمایشی روشن است؛ منتظر فرصت مناسب.':'معامله خودکار آزمایشی خاموش شد.'}
-function demoTrade(){if(!auto){alert('ابتدا معامله خودکار آزمایشی را روشن کنید.');return}if(stopped){alert('ربات متوقف است؛ ابتدا صفحه را دوباره بارگذاری کنید.');return}active=true;document.getElementById('idle').classList.add('hidden');document.getElementById('active').classList.remove('hidden');document.getElementById('status').textContent='یک معامله فرضی BTC/USDT باز شده است.';document.getElementById('today').textContent='+۸۰۰٬۰۰۰ تومان';document.getElementById('historyText').textContent='یک معامله آزمایشی BTC/USDT باز شد؛ سپس با دکمه بستن می‌توانید آن را ببندید.'}
-function closeTrade(){active=false;document.getElementById('active').classList.add('hidden');document.getElementById('idle').classList.remove('hidden');document.getElementById('status').textContent='معامله آزمایشی بسته شد. ربات دوباره بازار را بررسی می‌کند.';document.getElementById('historyText').textContent='یک معامله آزمایشی BTC/USDT بسته شد. اعداد این نسخه ساختگی هستند.'}
-function stopBot(){stopped=true;auto=false;document.getElementById('auto').classList.remove('on');document.getElementById('status').textContent='ربات آزمایشی متوقف شده است.';alert('ربات آزمایشی متوقف شد.')}
-function tab(id,btn){['home','history','settings'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
-</script></body></html>
+const initialBalance=1000000;
+let balance=initialBalance;
+let engines=[false,false,false];
+let trades=[];
+let totalPnl=0;
+let risk=1,fee=0.1;
+let running=false;
+
+const names=["Scalping","Day Trading","Swing Trading"];
+
+function format(n){
+return Math.round(n).toLocaleString("fa-IR")+" ریال";
+}
+
+function toggleEngine(i){
+engines[i]=!engines[i];
+update();
+}
+
+function update(){
+let count=engines.filter(Boolean).length;
+document.getElementById("engineCount").textContent=count+" از ۳";
+document.getElementById("botStatus").textContent=count?"موتورها آماده‌اند":"آماده شروع معاملات";
+engines.forEach((v,i)=>{
+document.getElementById("s"+(i+1)).classList.toggle("on",v);
+document.getElementById("e"+(i+1)).classList.toggle("active",v);
+document.getElementById("st"+(i+1)).textContent=v?"روشن":"خاموش";
+});
+document.getElementById("balance").textContent=format(balance);
+document.getElementById("totalPnl").textContent=format(totalPnl);
+document.getElementById("totalPnl").className=totalPnl>=0?"green":"red";
+document.getElementById("tradeCount").textContent=trades.length.toLocaleString("fa-IR");
+}
+
+function startPaper(){
+if(!engines.some(Boolean)){
+alert("ابتدا حداقل یک موتور را روشن کن.");
+return;
+}
+running=true;
+document.getElementById("status").textContent="سیستم شبیه‌سازی فعال است. برای ثبت معامله آزمایشی از دکمه مربوط استفاده کن.";
+}
+
+function stopAll(){
+engines=[false,false,false];
+running=false;
+update();
+document.getElementById("status").textContent="تمام موتورها خاموش شدند.";
+}
+
+function demoTrade(){
+if(!running){
+alert("ابتدا یک موتور را روشن کن و شروع معاملات را بزن.");
+return;
+}
+let i=engines.findIndex(Boolean);
+if(i<0)return;
+
+let amount=Math.floor(balance*risk/100);
+let cost=amount*fee/100;
+let pnl=Math.floor(amount*0.02)-cost*2;
+
+if(amount<=0||balance<amount){
+alert("موجودی کافی نیست.");
+return;
+}
+
+balance-=cost*2;
+balance+=pnl+cost*2;
+totalPnl+=pnl;
+
+let t={
+name:names[i],
+amount:amount,
+pnl:pnl,
+date:new Date().toLocaleString("fa-IR")
+};
+trades.unshift(t);
+document.getElementById("status").textContent="یک معامله فرضی توسط "+names[i]+" ثبت شد. این معامله سود واقعی نیست.";
+renderTrades();
+update();
+}
+
+function renderTrades(){
+let open=document.getElementById("openTrades");
+let history=document.getElementById("historyList");
+
+if(!trades.length){
+open.textContent="معامله بازی وجود ندارد.";
+history.textContent="هنوز معامله‌ای ثبت نشده است.";
+return;
+}
+
+open.innerHTML="آخرین معاملات آزمایشی:";
+history.innerHTML=trades.map(t=>
+'<div class="trade-item"><b>'+t.name+'</b><br>حجم: '+format(t.amount)+'<br>سود/زیان فرضی: '+format(t.pnl)+'<br>'+t.date+'</div>'
+).join("");
+}
+
+function saveSettings(){
+let r=Number(document.getElementById("risk").value);
+let f=Number(document.getElementById("fee").value);
+if(r<0.1||r>2||f<0||f>2){
+alert("مقادیر ریسک یا کارمزد نامعتبر است.");
+return;
+}
+risk=r;
+fee=f;
+alert("تنظیمات ذخیره شد.");
+}
+
+function tab(id,btn){
+["home","history","settings"].forEach(x=>
+document.getElementById(x).classList.toggle("hidden",x!==id)
+);
+document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
+btn.classList.add("active");
+}
+
+update();
+</script>
+</body>
+</html>

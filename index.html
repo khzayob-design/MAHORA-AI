@@ -125,9 +125,7 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
   <span class="strategy">09 Stochastic</span>
   <span class="strategy">10 Support / Resistance</span>
  </div>
- <p class="notice">
- حداقل شش رأی خرید برای ایجاد سیگنال اولیه لازم است.
- </p>
+ <p class="notice">حداقل شش رأی خرید برای ایجاد سیگنال اولیه لازم است.</p>
 </div>
 
 <div class="panel">
@@ -177,7 +175,6 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
 <script>
 "use strict";
 
-/* تنظیمات داخلی */
 const API="https://apiv2.nobitex.ir";
 const CAPITAL=10000000;
 
@@ -191,8 +188,8 @@ const INTERNAL={
  maxPositions:3,
  dailyLossLimit:3,
  minVotes:6,
- requestDelay:250,
- requestTimeout:8000,
+ requestDelay:300,
+ requestTimeout:10000,
  retryDelay:30000,
  marketRefresh:300000
 };
@@ -225,7 +222,6 @@ let state={
  failures:0
 };
 
-/* گزارش */
 function log(message){
  const box=$("log");
  const line=document.createElement("div");
@@ -243,7 +239,6 @@ function clearError(){
  $("errorInfo").textContent="";
 }
 
-/* ذخیره */
 function saveState(){
  try{
   localStorage.setItem("mahora_ai_v8",JSON.stringify({
@@ -270,7 +265,6 @@ function loadState(){
  }
 }
 
-/* درخواست امن با مهلت زمانی */
 async function getJSON(url){
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),INTERNAL.requestTimeout);
@@ -291,53 +285,55 @@ async function getJSON(url){
  }
 }
 
-function toTicker(key){
- const parts=key.toUpperCase().split("-");
- if(parts.length!==2)return null;
- return parts[0]+(parts[1]==="RLS"?"IRT":parts[1]);
-}
-
-/* شناسایی بازارها */
+/* شناسایی بازارهای ریالی؛ کلیدهای API معمولاً حروف کوچک دارند */
 async function discoverMarkets(){
  try{
   $("apiStatus").textContent="در حال اتصال";
+
   const data=await getJSON(API+"/market/stats?dstCurrency=rls");
 
   if(data.status!=="ok"||!data.stats)
    throw new Error("پاسخ نامعتبر بازار");
 
   const all=Object.entries(data.stats).filter(([key,v])=>
-   key.includes("-")&&v&&typeof v==="object"&&Number(v.latest)>0
+   /^[a-z0-9]+-rls$/i.test(key)&&
+   v&&typeof v==="object"&&Number(v.latest)>0
   );
 
-  const markets=all.map(([key,v])=>({
-   key,
-   symbol:toTicker(key),
-   base:key.split("-")[0],
-   quote:key.split("-")[1],
-   latest:Number(v.latest)/10,
-   change:Number(v.dayChange||0),
-   closed:v.isClosed===true
-  })).filter(m=>m.symbol);
-
-  const eligible=markets.filter(m=>
-   m.quote==="RLS"&&!m.closed&&m.latest>0
-  );
+  const markets=all.map(([key,v])=>{
+   const parts=key.toUpperCase().split("-");
+   return {
+    key,
+    symbol:parts[0]+"IRT",
+    base:parts[0],
+    quote:parts[1],
+    latest:Number(v.latest)/10,
+    change:Number(v.dayChange||0),
+    closed:v.isClosed===true
+   };
+  });
 
   state.markets=markets;
-  state.eligible=eligible;
+  state.eligible=markets.filter(m=>
+   !m.closed&&m.latest>0
+  );
   state.lastMarketRefresh=Date.now();
 
   $("apiStatus").textContent="متصل";
   $("apiStatus").className="green";
   $("marketCount").textContent=markets.length;
-  $("eligibleCount").textContent=eligible.length;
+  $("eligibleCount").textContent=state.eligible.length;
 
   renderMarket();
-  clearError();
-
   log("بازارهای شناسایی‌شده: "+markets.length);
-  log("بازارهای ریالی فعال: "+eligible.length);
+  log("بازارهای ریالی فعال: "+state.eligible.length);
+
+  if(state.eligible.length===0){
+   showError("هیچ بازار ریالی فعالی دریافت نشد؛ پاسخ API را بررسی کن.");
+   return false;
+  }
+
+  clearError();
   return true;
 
  }catch(e){
@@ -348,7 +344,7 @@ async function discoverMarkets(){
  }
 }
 
-/* کندل‌ها */
+/* دریافت کندل؛ قیمت‌های UDF ریال هستند و به تومان تبدیل می‌شوند */
 async function fetchCandles(market,resolution){
  const now=Math.floor(Date.now()/1000);
  const url=API+
@@ -359,34 +355,21 @@ async function fetchCandles(market,resolution){
  const data=await getJSON(url);
 
  if(data.s!=="ok"||!Array.isArray(data.c))
-  throw new Error("کندل موجود نیست");
+  throw new Error(data.errmsg||"کندل موجود نیست");
 
  const rows=data.c.map((c,i)=>({
-  o:Number(data.o[i]),
-  h:Number(data.h[i]),
-  l:Number(data.l[i]),
-  c:Number(c),
+  o:Number(data.o?.[i])/10,
+  h:Number(data.h?.[i])/10,
+  l:Number(data.l?.[i])/10,
+  c:Number(c)/10,
   v:Number(data.v?.[i]||0),
-  t:Number(data.t[i])
+  t:Number(data.t?.[i])
  })).filter(x=>
-  [x.o,x.h,x.l,x.c].every(Number.isFinite)&&x.c>0
+  [x.o,x.h,x.l,x.c].every(Number.isFinite)&&
+  x.c>0&&x.h>0&&x.l>0&&x.o>0
  );
 
  if(rows.length<40)throw new Error("داده کندل ناکافی");
-
- /* یکسان‌سازی واحد قیمت کندل با قیمت بازار */
- const target=market.latest;
- const last=rows[rows.length-1].c;
-
- if(target>0&&last>0){
-  const factor=target/last;
-  for(const x of rows){
-   x.o*=factor;
-   x.h*=factor;
-   x.l*=factor;
-   x.c*=factor;
-  }
- }
  return rows;
 }
 
@@ -461,7 +444,7 @@ function stochastic(c){
   (rows[rows.length-1].c-low)/(high-low)*100;
 }
 
-/* ده استراتژی */
+/* ده استراتژی تحلیل */
 function analyze(c){
  const close=c.map(x=>x.c);
  const last=close[close.length-1];
@@ -641,8 +624,7 @@ async function runScan(){
   if(!state.eligible.length||
      Date.now()-state.lastMarketRefresh>INTERNAL.marketRefresh){
    const ok=await discoverMarkets();
-   if(!ok&&!state.eligible.length)
-    throw new Error("بازارها در دسترس نیستند");
+   if(!ok)throw new Error("بازارهای ریالی در دسترس نیستند");
   }
 
   if(!state.eligible.length)
@@ -658,6 +640,8 @@ async function runScan(){
   const engines=["scalp","day"];
 
   $("scanInfo").textContent="اسکن خودکار بازارها در حال انجام است.";
+  $("scanProgress").style.width="0%";
+  $("scannedCount").textContent="0";
 
   for(let i=0;i<total;i++){
    if(!state.running)break;
@@ -672,7 +656,7 @@ async function runScan(){
      completed++;
     }catch(e){
      failures++;
-     if(failures<=8)
+     if(failures<=10)
       log(market.symbol+" / "+engine+": "+e.message);
     }
 
@@ -710,14 +694,12 @@ async function runScan(){
  }
 }
 
-/* چرخه خودکار با تلاش مجدد */
+/* چرخه خودکار */
 async function autoLoop(){
  if(!state.running||state.scanning)return;
 
  try{
   await runScan();
- }catch(e){
-  showError(e.message);
  }finally{
   if(state.running){
    state.timer=setTimeout(autoLoop,INTERNAL.retryDelay);
@@ -725,7 +707,6 @@ async function autoLoop(){
  }
 }
 
-/* شروع */
 function startSystem(){
  if(state.running)return;
 
@@ -734,12 +715,11 @@ function startSystem(){
 
  log("MAHORA AI شروع شد.");
  log("چرخه خودکار فعال شد.");
- log("در صورت خطا، اتصال مجدداً امتحان می‌شود.");
+ log("حالت فقط Paper Trading فعال است.");
 
  autoLoop();
 }
 
-/* توقف */
 function stopSystem(){
  state.running=false;
 
@@ -752,7 +732,7 @@ function stopSystem(){
  log("سیستم متوقف شد.");
 }
 
-/* بازگشت از حالت پس‌زمینه گوشی */
+/* بازگشت صفحه از پس‌زمینه */
 document.addEventListener("visibilitychange",()=>{
  if(document.visibilityState==="visible"&&state.running){
   if(state.timer){
@@ -769,7 +749,6 @@ document.addEventListener("visibilitychange",()=>{
 /* نمایش بازارها */
 function renderMarket(){
  $("marketTable").innerHTML=state.markets
-  .filter(m=>m.quote==="RLS")
   .slice(0,150)
   .map(m=>`
    <tr>
@@ -854,7 +833,6 @@ function renderAll(){
  updateStatus();
 }
 
-/* بازنشانی حساب آزمایشی */
 function resetPaper(){
  if(state.running){
   alert("ابتدا سیستم را متوقف کن.");
@@ -874,12 +852,12 @@ function resetPaper(){
  log("حساب آزمایشی بازنشانی شد.");
 }
 
-/* راه‌اندازی */
+/* راه‌اندازی اولیه */
 async function init(){
  loadState();
  renderAll();
 
- log("MAHORA AI نسخه ۸ آماده است.");
+ log("MAHORA AI نسخه اصلاح‌شده آماده است.");
  log("مدیریت ریسک داخلی فعال است.");
  log("موتورها: Scalping و Day Trading.");
  log("سرمایه آزمایشی: ۱۰ میلیون تومان.");

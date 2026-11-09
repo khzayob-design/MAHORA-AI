@@ -3,137 +3,159 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAHORA AI V5 - Diagnostic</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080d19">
+<title>MAHORA AI V6</title>
 <style>
+:root{--bg:#080d19;--panel:#111a2b;--border:#263650;--text:#edf3ff;--muted:#93a4bd;--green:#19c784;--red:#ff596b;--yellow:#f5bd4f;--blue:#55a8ff}
 *{box-sizing:border-box}
-body{margin:0;background:#0b1220;color:#e8edf7;font-family:Tahoma,Arial,sans-serif;padding:14px}
-.wrap{max-width:1000px;margin:auto}
-header,.card{background:#131e30;border:1px solid #263750;border-radius:14px;padding:16px;margin-bottom:13px}
-h1{font-size:21px;color:#e8c879;margin:0 0 8px}
-h2{font-size:16px;color:#e8c879;margin:0 0 13px}
-p{font-size:12px;color:#aab8cc;line-height:2;margin:5px 0}
-.status{display:inline-block;padding:7px 12px;border-radius:8px;background:#263750;color:#e8c879;font-size:12px}
+body{margin:0;padding:14px;background:var(--bg);color:var(--text);font:14px Tahoma,Arial,sans-serif}
+.container{max-width:850px;margin:auto}
+header{text-align:center;padding:20px 5px;border-bottom:1px solid var(--border);margin-bottom:15px}
+h1{font-size:24px;margin:0 0 8px}
+.muted,.small{color:var(--muted);font-size:12px}
+.notice{background:#392b16;color:#ffd78a;padding:12px;border-radius:10px;line-height:2;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.metric{background:#0c1728;border-radius:10px;padding:12px}
-.metric small{display:block;color:#91a4bd;font-size:11px;margin-bottom:8px}
-.metric strong{font-size:18px}
-button{border:0;border-radius:10px;padding:13px 16px;font-family:inherit;font-weight:bold;cursor:pointer}
-.primary{background:#d8b765;color:#172033;width:100%;margin-top:10px}
-.secondary{background:#263750;color:#fff;width:100%;margin-top:8px}
-button:disabled{opacity:.5;cursor:wait}
-table{width:100%;border-collapse:collapse;font-size:11px}
-th,td{padding:10px 6px;border-bottom:1px solid #263750;text-align:right}
-th{color:#e8c879}
-.good{color:#55d69e}.bad{color:#ff7777}.warn{color:#f4c76b}
-.result{background:#0c1728;border:1px solid #263750;border-radius:10px;padding:12px;margin:10px 0}
-.result h3{font-size:14px;margin:0 0 8px;color:#e8c879}
-.result p{overflow-wrap:anywhere}
-.tag{font-size:10px;padding:4px 7px;border-radius:5px;background:#263750;margin-left:4px}
-.log{font-size:11px;line-height:2;color:#aab8cc;max-height:220px;overflow:auto}
-@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}
+.full{grid-column:1/-1}
+.label{color:var(--muted);font-size:12px;margin-bottom:9px}
+.value{font-size:19px;font-weight:bold;overflow-wrap:anywhere}
+.small{margin-top:7px}
+.green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}.blue{color:var(--blue)}
+button{width:100%;padding:14px;border:0;border-radius:10px;font:bold 14px Tahoma;cursor:pointer;margin-top:9px}
+button:disabled{opacity:.5}
+.primary{background:var(--blue);color:#07111f}
+.secondary{background:#17243a;color:white;border:1px solid var(--border)}
+.danger{background:#3b1823;color:#ff9ba6;border:1px solid #793343}
+.progress{height:8px;background:#263650;border-radius:10px;overflow:hidden;margin-top:12px}
+.bar{height:100%;width:0;background:var(--blue);transition:width .2s}
+.log{background:#070c15;border:1px solid var(--border);border-radius:10px;padding:12px;height:220px;overflow:auto;font-size:12px;line-height:2;overflow-wrap:anywhere}
+.logline{border-bottom:1px solid #18243a;padding:3px 0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:10px 5px;border-bottom:1px solid var(--border);text-align:right;overflow-wrap:anywhere}
+th{color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
+@media(max-width:420px){body{padding:9px}.value{font-size:16px}h1{font-size:21px}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
 <header>
-<h1>MAHORA AI V5</h1>
-<p>Independent Market & Candle Diagnostic</p>
-<span class="status">حالت تشخیص مستقل | بدون معامله</span>
-<p class="good">● سیستم معامله: غیرفعال و قفل‌شده</p>
-<p>این نسخه هیچ سفارش خرید یا فروشی ثبت نمی‌کند و اطلاعات حساب قبلی را تغییر نمی‌دهد.</p>
+<h1>MAHORA AI</h1>
+<div class="muted">نسخه V6 | عیب‌یابی مستقل بازار و کندل</div>
 </header>
 
+<div class="notice">
+<strong>حالت ایمن فعال است</strong><br>
+این نسخه فقط اطلاعات بازار و کندل‌ها را می‌خواند. هیچ سفارش یا معامله‌ای انجام نمی‌دهد.
+</div>
+
 <div class="grid">
-<div class="metric"><small>وضعیت API</small><strong id="apiStatus">بررسی نشده</strong></div>
-<div class="metric"><small>تعداد بازارها</small><strong id="marketCount">۰</strong></div>
-<div class="metric"><small>بازارهای بررسی‌شده</small><strong id="testedCount">۰</strong></div>
-<div class="metric"><small>بررسی موفق</small><strong id="successCount">۰</strong></div>
-</div>
-
 <div class="card">
-<h2>کنترل عیب‌یابی</h2>
-<p>با فشردن دکمه زیر فقط ۵ بازار بررسی می‌شوند. سیستم معامله روشن نمی‌شود.</p>
-<button class="primary" id="scanBtn" onclick="runDiagnostic()">شروع عیب‌یابی مستقل</button>
-<button class="secondary" id="marketBtn" onclick="loadMarkets()">دریافت مجدد فهرست بازارها</button>
-<p id="scanStatus" class="warn">آماده بررسی</p>
+<div class="label">وضعیت سیستم</div>
+<div class="value green">خاموش و ایمن</div>
+<div class="small">معاملات غیرفعال</div>
 </div>
-
 <div class="card">
-<h2>گزارش کلی</h2>
-<div class="grid">
-<div class="metric"><small>آخرین زمان بررسی</small><strong id="lastTime" style="font-size:12px">—</strong></div>
-<div class="metric"><small>کندل معتبر</small><strong id="validCount">۰</strong></div>
-<div class="metric"><small>خطاها</small><strong id="errorCount">۰</strong></div>
-<div class="metric"><small>وضعیت معامله</small><strong class="good">قفل</strong></div>
+<div class="label">وضعیت API</div>
+<div class="value yellow" id="apiStatus">بررسی نشده</div>
+<div class="small" id="apiDetail">منتظر اتصال</div>
 </div>
-</div>
-
 <div class="card">
-<h2>نتایج بازارها</h2>
-<div id="results"><p>هنوز بررسی انجام نشده است.</p></div>
+<div class="label">سرمایه آزمایشی</div>
+<div class="value">۱۰,۰۰۰,۰۰۰</div>
+<div class="small">تومان | نمایشی</div>
 </div>
-
 <div class="card">
-<h2>فهرست بازارهای دریافت‌شده</h2>
-<div style="overflow-x:auto">
+<div class="label">تعداد بازارها</div>
+<div class="value" id="marketCount">۰</div>
+<div class="small" id="marketDetail">دریافت نشده</div>
+</div>
+<div class="card">
+<div class="label">بازارهای بررسی‌شده</div>
+<div class="value" id="scannedCount">۰</div>
+</div>
+<div class="card">
+<div class="label">بازارهای معتبر</div>
+<div class="value" id="validCount">۰</div>
+</div>
+<div class="card full">
+<div class="label">پیشرفت عیب‌یابی</div>
+<div class="value" id="progressText">آماده</div>
+<div class="progress"><div class="bar" id="progressBar"></div></div>
+</div>
+<div class="card full">
+<button class="primary" id="diagnosticBtn" type="button">شروع عیب‌یابی مستقل</button>
+<button class="secondary" id="marketBtn" type="button">دریافت مجدد بازارها</button>
+<button class="danger" id="clearBtn" type="button">پاک کردن گزارش‌ها</button>
+</div>
+<div class="card full">
+<div class="label">نتیجه کندل‌ها</div>
 <table>
-<thead><tr><th>بازار</th><th>قیمت آخر</th><th>حجم</th></tr></thead>
-<tbody id="marketTable"><tr><td colspan="3">در انتظار دریافت اطلاعات</td></tr></tbody>
+<thead><tr><th>بازار</th><th>کندل معتبر</th><th>وضعیت</th></tr></thead>
+<tbody id="results"><tr><td colspan="3">هنوز آزمایشی انجام نشده</td></tr></tbody>
 </table>
 </div>
+<div class="card full">
+<div class="label">گزارش فعالیت</div>
+<div class="log" id="logs">
+<div class="logline">MAHORA AI V6 آماده است.</div>
 </div>
-
-<div class="card">
-<h2>گزارش فعالیت</h2>
-<div class="log" id="logs">نسخه V5 آماده است.</div>
 </div>
+<div class="card full">
+<div class="label">نتیجه نهایی</div>
+<div class="value yellow" id="finalStatus">در انتظار آزمایش</div>
+<div class="small" id="finalDetail">برای شروع دکمه عیب‌یابی را بزنید.</div>
+</div>
+</div>
+<footer>MAHORA AI V6 | READ ONLY | NO TRADING</footer>
 </div>
 
 <script>
+(function(){
 "use strict";
 
-/* MAHORA V5
-   DIAGNOSTIC ONLY
-   No trading functions. No order endpoints.
-   Previous paper data is read-only and untouched.
-*/
+var API="https://apiv2.nobitex.ir";
+var SYMBOLS=["BTCIRT","ETHIRT","BNBIRT","XRPIRT","DOGEIRT"];
+var state={busy:false,markets:[],scanned:0,valid:0,errors:0};
 
-const API="https://apiv2.nobitex.ir";
-const STORAGE_KEY="mahora_paper_v13";
-const RESOLUTION=15;
-const CANDLE_SECONDS=900;
-const MAX_MARKETS=5;
+function $(id){return document.getElementById(id)}
 
-let markets=[];
-let busy=false;
-let totalErrors=0;
-let totalValid=0;
-
-const $=id=>document.getElementById(id);
-
-function log(message){
- const box=$("logs");
- const time=new Date().toLocaleTimeString("fa-IR");
- box.innerHTML="<div>["+time+"] "+escapeHtml(message)+"</div>"+box.innerHTML;
+function log(message,type){
+ var box=$("logs");
+ var line=document.createElement("div");
+ line.className="logline";
+ var time=document.createElement("span");
+ time.className="muted";
+ time.textContent="["+new Date().toLocaleTimeString("fa-IR")+"] ";
+ var content=document.createElement("span");
+ content.textContent=String(message);
+ content.className=type||"";
+ line.appendChild(time);
+ line.appendChild(content);
+ box.appendChild(line);
+ box.scrollTop=box.scrollHeight;
 }
 
-function escapeHtml(s){
- return String(s).replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- })[c]);
+function progress(value,label){
+ $("progressBar").style.width=Math.min(100,value)+"%";
+ $("progressText").textContent=label;
 }
 
-async function getJSON(url,timeout=15000){
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),timeout);
+function apiStatus(status,detail,color){
+ $("apiStatus").textContent=status;
+ $("apiStatus").className="value "+color;
+ $("apiDetail").textContent=detail;
+}
+
+async function request(url,options){
+ var controller=new AbortController();
+ var timer=setTimeout(function(){controller.abort()},12000);
  try{
-  const response=await fetch(url,{
-   method:"GET",
-   headers:{"Accept":"application/json"},
+  var response=await fetch(url,Object.assign({},options||{},{
    signal:controller.signal,
    cache:"no-store"
-  });
+  }));
   if(!response.ok)throw new Error("HTTP "+response.status);
   return await response.json();
  }finally{
@@ -141,335 +163,186 @@ async function getJSON(url,timeout=15000){
  }
 }
 
-function toNumber(x){
- const n=Number(x);
- return Number.isFinite(n)?n:null;
-}
-
-function formatNumber(n){
- if(n===null||n===undefined||!Number.isFinite(Number(n)))return "—";
- return Number(n).toLocaleString("en-US",{maximumFractionDigits:8});
-}
-
-function getStatsObject(data){
- if(!data||typeof data!=="object")throw new Error("ساختار پاسخ بازار نامعتبر است");
- const stats=data.stats||data;
- if(!stats||typeof stats!=="object")throw new Error("فهرست stats موجود نیست");
- return stats;
-}
-
-function marketSymbol(key){
- return key.toUpperCase().replace(/-RLS$/,"IRT");
+async function fetchMarkets(){
+ log("در حال دریافت فهرست بازارها...");
+ var data=await request(API+"/market/stats",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({})
+ });
+ if(!data||data.status!=="ok")throw new Error("پاسخ بازار معتبر نیست");
+ var list=[];
+ if(data.stats&&typeof data.stats==="object")list=Object.keys(data.stats);
+ if(data.markets&&Array.isArray(data.markets)){
+  list=data.markets.map(function(x){
+   return typeof x==="string"?x:(x.symbol||x.name||"");
+  }).filter(Boolean);
+ }
+ if(!list.length)throw new Error("فهرست بازارها خالی است");
+ state.markets=list;
+ $("marketCount").textContent=String(list.length);
+ $("marketDetail").textContent="بازارها دریافت شدند";
+ apiStatus("متصل","پاسخ API دریافت شد","green");
+ log("تعداد بازارهای دریافت‌شده: "+list.length,"green");
+ return list;
 }
 
 async function loadMarkets(){
- if(busy)return;
+ if(state.busy)return;
  $("marketBtn").disabled=true;
- $("apiStatus").textContent="در حال اتصال";
- $("scanStatus").textContent="در حال دریافت بازارها...";
  try{
-  const data=await getJSON(API+"/market/stats?dstCurrency=rls");
-  const stats=getStatsObject(data);
-  markets=Object.entries(stats)
-   .filter(([key,v])=>/-rls$/i.test(key)&&v&&toNumber(v.latest)!==null)
-   .map(([key,v])=>({
-    key,
-    symbol:marketSymbol(key),
-    latest:Number(v.latest),
-    volume:toNumber(v.volumeSrc)??toNumber(v.volumeDst)??0
-   }))
-   .sort((a,b)=>b.volume-a.volume);
-
-  $("apiStatus").innerHTML='<span class="good">متصل</span>';
-  $("marketCount").textContent=formatNumber(markets.length);
-  $("marketTable").innerHTML=markets.slice(0,30).map(m=>
-   `<tr><td>${escapeHtml(m.symbol)}</td><td>${formatNumber(m.latest/10)} تومان</td><td>${formatNumber(m.volume)}</td></tr>`
-  ).join("")||'<tr><td colspan="3">بازاری پیدا نشد</td></tr>';
-
-  $("scanStatus").textContent="بازارها دریافت شدند؛ آماده عیب‌یابی";
-  log("فهرست بازارها دریافت شد: "+markets.length);
- }catch(e){
-  $("apiStatus").innerHTML='<span class="bad">خطا</span>';
-  $("scanStatus").textContent="خطا در دریافت بازارها: "+e.message;
-  log("خطای دریافت بازارها: "+e.message);
+  await fetchMarkets();
+ }catch(error){
+  apiStatus("خطا",error.message,"red");
+  log("خطای بازارها: "+error.message,"red");
  }finally{
   $("marketBtn").disabled=false;
  }
 }
 
-function validateCandles(raw){
- if(!raw||!Array.isArray(raw.t)||!Array.isArray(raw.o)||
-    !Array.isArray(raw.h)||!Array.isArray(raw.l)||
-    !Array.isArray(raw.c)){
-  throw new Error("ساختار آرایه‌های کندل ناقص است");
+async function fetchCandles(symbol){
+ var now=Math.floor(Date.now()/1000);
+ var from=now-48*60*60;
+ var url=API+"/market/udf/history?symbol="+encodeURIComponent(symbol)+
+ "&resolution=60&from="+from+"&to="+now;
+ var data=await request(url);
+ if(!data||data.s!=="ok")throw new Error("داده کندل دریافت نشد");
+ var fields=["t","o","h","l","c","v"];
+ fields.forEach(function(field){
+  if(!Array.isArray(data[field]))throw new Error("فیلد "+field+" موجود نیست");
+ });
+ var length=data.t.length;
+ if(length<30)throw new Error("تعداد کندل کم است: "+length);
+ fields.forEach(function(field){
+  if(data[field].length!==length)throw new Error("طول داده‌ها متفاوت است");
+ });
+ var valid=0,previous=0;
+ for(var i=0;i<length;i++){
+  var t=Number(data.t[i]),o=Number(data.o[i]);
+  var h=Number(data.h[i]),l=Number(data.l[i]);
+  var c=Number(data.c[i]),v=Number(data.v[i]);
+  if(![t,o,h,l,c,v].every(Number.isFinite))continue;
+  if(o<=0||h<=0||l<=0||c<=0)continue;
+  if(h<l||h<o||h<c||l>o||l>c)continue;
+  if(t<=previous)continue;
+  previous=t;
+  valid++;
  }
-
- const lengths=[raw.t.length,raw.o.length,raw.h.length,raw.l.length,raw.c.length];
- if(new Set(lengths).size!==1)throw new Error("طول آرایه‌های OHLC برابر نیست");
-
- if(raw.v!==undefined&&Array.isArray(raw.v)&&raw.v.length!==raw.t.length){
-  throw new Error("طول آرایه حجم با کندل‌ها برابر نیست");
- }
-
- const rows=[];
- for(let i=0;i<raw.t.length;i++){
-  const t=toNumber(raw.t[i]);
-  const o=toNumber(raw.o[i]);
-  const h=toNumber(raw.h[i]);
-  const l=toNumber(raw.l[i]);
-  const c=toNumber(raw.c[i]);
-  const v=raw.v&&raw.v[i]!==undefined?toNumber(raw.v[i]):0;
-
-  if([t,o,h,l,c].some(x=>x===null))continue;
-  if(v===null||v<0)continue;
-  if(h<Math.max(o,c,l)||l>Math.min(o,c,h))continue;
-
-  rows.push({t,o,h,l,c,v});
- }
-
- if(rows.length<30)throw new Error("تعداد کندل معتبر کمتر از ۳۰ است");
-
- for(let i=1;i<rows.length;i++){
-  if(rows[i].t<=rows[i-1].t){
-   throw new Error("زمان کندل‌ها صعودی نیست یا تکراری است");
-  }
- }
-
- const now=Math.floor(Date.now()/1000);
- const closed=rows.filter(x=>x.t+CANDLE_SECONDS<=now);
-
- if(closed.length<30)throw new Error("کندل بسته‌شده کافی وجود ندارد");
-
- return {
-  rows:closed,
-  received:raw.t.length,
-  valid:closed.length,
-  last:closed[closed.length-1]
- };
+ if(valid<30)throw new Error("کندل معتبر کافی نیست: "+valid);
+ return {count:length,valid:valid};
 }
 
-async function fetchCandles(m){
- const to=Math.floor(Date.now()/1000);
- const url=API+"/market/udf/history?symbol="+encodeURIComponent(m.symbol)+
-  "&resolution="+RESOLUTION+"&countback=160&to="+to;
-
- const raw=await getJSON(url,18000);
-
- if(raw.s&&raw.s!=="ok"){
-  throw new Error("پاسخ کندل: "+raw.s+(raw.errmsg?" - "+raw.errmsg:""));
- }
-
- return validateCandles(raw);
-}
-
-function ema(values,period){
- if(values.length<period)return null;
- let result=values.slice(0,period).reduce((a,b)=>a+b,0)/period;
- const k=2/(period+1);
- for(let i=period;i<values.length;i++){
-  result=values[i]*k+result*(1-k);
- }
- return result;
-}
-
-function rsi(values,period=14){
- if(values.length<=period)return null;
- let gain=0,loss=0;
- for(let i=values.length-period;i<values.length;i++){
-  const d=values[i]-values[i-1];
-  if(d>0)gain+=d;else loss-=d;
- }
- if(loss===0)return 100;
- return 100-(100/(1+gain/loss));
-}
-
-function stdDev(values){
- const avg=values.reduce((a,b)=>a+b,0)/values.length;
- return Math.sqrt(values.reduce((a,b)=>a+(b-avg)**2,0)/values.length);
-}
-
-function analyze(rows){
- const closes=rows.map(x=>x.c);
- const last=rows[rows.length-1];
- const prev=rows[rows.length-2];
- const votes=[];
-
- const add=(name,condition,detail)=>{
-  votes.push({name,ok:!!condition,detail});
- };
-
- const e9=ema(closes,9),e21=ema(closes,21),e50=ema(closes,50);
- add("EMA",e9!==null&&e21!==null&&e9>e21,
-  "EMA9: "+formatNumber(e9)+" | EMA21: "+formatNumber(e21));
-
- const rv=rsi(closes);
- add("RSI",rv!==null&&rv>=50&&rv<70,"RSI: "+formatNumber(rv));
-
- const macdFast=ema(closes,12),macdSlow=ema(closes,26);
- const macd=macdFast!==null&&macdSlow!==null?macdFast-macdSlow:null;
- add("MACD",macd!==null&&macd>0,"MACD: "+formatNumber(macd));
-
- const recent=closes.slice(-20);
- const avg=recent.reduce((a,b)=>a+b,0)/recent.length;
- const sd=stdDev(recent);
- const upper=avg+2*sd,lower=avg-2*sd;
- add("Bollinger",last.c>avg&&last.c<upper,
-  "میانگین: "+formatNumber(avg));
-
- const typical=rows.slice(-20).map(x=>(x.h+x.l+x.c)/3);
- const volumes=rows.slice(-20).map(x=>x.v);
- const totalVol=volumes.reduce((a,b)=>a+b,0);
- const vwap=totalVol>0?
-  typical.reduce((sum,p,i)=>sum+p*volumes[i],0)/totalVol:null;
- add("VWAP",vwap!==null&&last.c>vwap,"VWAP: "+formatNumber(vwap));
-
- const tr=rows.slice(-15).reduce((sum,x)=>sum+(x.h-x.l),0)/15;
- const range=last.h-last.l;
- add("ADX proxy",tr>0&&range>tr*0.7,
-  "میانگین دامنه: "+formatNumber(tr));
-
- const highs=rows.slice(-20).map(x=>x.h);
- const lows=rows.slice(-20).map(x=>x.l);
- const hh=Math.max(...highs),ll=Math.min(...lows);
- const donchian=hh>ll?(last.c-ll)/(hh-ll)*100:null;
- add("Donchian",donchian!==null&&donchian>50,
-  "موقعیت کانال: "+formatNumber(donchian));
-
- const avgVol=volumes.slice(0,-1).reduce((a,b)=>a+b,0)/Math.max(1,volumes.length-1);
- add("Volume",last.v>avgVol,"حجم آخر: "+formatNumber(last.v));
-
- const stoch=hh>ll?(last.c-ll)/(hh-ll)*100:null;
- add("Stochastic",stoch!==null&&stoch>50&&stoch<85,
-  "Stochastic: "+formatNumber(stoch));
-
- add("Support/Resistance",last.c>ll+(hh-ll)*0.5,
-  "حمایت تقریبی: "+formatNumber(ll));
-
- return {
-  score:votes.filter(x=>x.ok).length,
-  votes,
-  ema50:e50,
-  rsi:rv,
-  close:last.c
- };
-}
-
-function compareUnits(candleClose,statsLatest){
- const toman=statsLatest/10;
- const candidates=[
-  {name:"کندل با واحد تومان",value:toman},
-  {name:"کندل با واحد ریال",value:statsLatest}
- ];
- const ratios=candidates.map(x=>({
-  name:x.name,
-  value:x.value,
-  ratio:candleClose/x.value,
-  diff:Math.abs(candleClose-x.value)/Math.max(candleClose,x.value)
- }));
- ratios.sort((a,b)=>a.diff-b.diff);
- return ratios[0];
-}
-
-function renderResult(m,data,analysis,unit){
- const votes=analysis.votes.map(v=>
-  `<span class="tag ${v.ok?"good":"bad"}">${escapeHtml(v.name)}: ${v.ok?"مثبت":"منفی"}</span>`
- ).join("");
-
- const unitStatus=unit.diff<0.08?
-  '<span class="good">تطبیق نسبی مناسب</span>':
-  '<span class="warn">اختلاف واحد/قیمت نیازمند بررسی</span>';
-
- return `<div class="result">
- <h3>${escapeHtml(m.symbol)} <span class="tag good">دریافت موفق</span></h3>
- <p>کندل دریافت‌شده: ${data.received} | کندل بسته‌شده معتبر: ${data.valid}</p>
- <p>آخرین کندل بسته‌شده: ${new Date(data.last.t*1000).toLocaleString("fa-IR")}</p>
- <p>قیمت بسته‌شدن کندل: ${formatNumber(data.last.c)}</p>
- <p>قیمت بازار به تومان: ${formatNumber(m.latest/10)}</p>
- <p>مقایسه واحد: ${escapeHtml(unit.name)} | اختلاف نسبی: ${formatNumber(unit.diff*100)}٪</p>
- <p>${unitStatus}</p>
- <p>امتیاز آزمایشی اندیکاتورها: <strong>${analysis.score} از ۱۰</strong></p>
- <p>${votes}</p>
- <p class="warn">این امتیاز صرفاً برای عیب‌یابی است؛ سیگنال خرید یا فروش محسوب نمی‌شود.</p>
- </div>`;
+function addResult(symbol,count,status,ok){
+ var row=document.createElement("tr");
+ [symbol,count,status].forEach(function(value,index){
+  var cell=document.createElement("td");
+  cell.textContent=value;
+  if(index===2)cell.className=ok?"green":"red";
+  row.appendChild(cell);
+ });
+ $("results").appendChild(row);
 }
 
 async function runDiagnostic(){
- if(busy)return;
- busy=true;
- totalErrors=0;
- totalValid=0;
- $("scanBtn").disabled=true;
- $("marketBtn").disabled=true;
+ if(state.busy)return;
+ state.busy=true;
+ state.scanned=0;
+ state.valid=0;
+ state.errors=0;
+ $("diagnosticBtn").disabled=true;
  $("results").innerHTML="";
- $("testedCount").textContent="۰";
- $("successCount").textContent="۰";
+ $("scannedCount").textContent="۰";
  $("validCount").textContent="۰";
- $("errorCount").textContent="۰";
- $("scanStatus").textContent="در حال بررسی کندل‌ها؛ بدون معامله...";
+ $("finalStatus").textContent="در حال بررسی";
+ $("finalStatus").className="value yellow";
+ $("finalDetail").textContent="در حال آزمایش API و کندل‌ها";
+ progress(5,"شروع عیب‌یابی");
+ log("شروع عیب‌یابی مستقل");
 
  try{
-  if(markets.length===0)await loadMarkets();
-  if(markets.length===0)throw new Error("بازاری برای بررسی دریافت نشد");
+  apiStatus("در حال اتصال","درخواست ارسال شد","yellow");
+  await fetchMarkets();
+  progress(20,"بررسی کندل‌ها");
 
-  const selected=markets.slice(0,MAX_MARKETS);
-  $("testedCount").textContent=String(selected.length);
-  log("شروع عیب‌یابی مستقل برای "+selected.length+" بازار");
-
-  let successes=0;
-  for(const m of selected){
-   $("scanStatus").textContent="در حال بررسی "+m.symbol;
-   log("درخواست کندل: "+m.symbol);
-
+  for(var i=0;i<SYMBOLS.length;i++){
+   var symbol=SYMBOLS[i];
    try{
-    const data=await fetchCandles(m);
-    const analysis=analyze(data.rows);
-    const unit=compareUnits(data.last.c,m.latest);
-
-    totalValid+=data.valid;
-    successes++;
-    $("results").innerHTML+=renderResult(m,data,analysis,unit);
-    log(m.symbol+": کندل معتبر "+data.valid+" | امتیاز "+analysis.score+"/10);
-   }catch(e){
-    totalErrors++;
-    $("results").innerHTML+=`<div class="result">
-     <h3>${escapeHtml(m.symbol)} <span class="tag bad">ناموفق</span></h3>
-     <p class="bad">علت: ${escapeHtml(e.message)}</p>
-    </div>`;
-    log("خطای "+m.symbol+": "+e.message);
+    log("بررسی "+symbol);
+    var result=await fetchCandles(symbol);
+    state.valid++;
+    addResult(symbol,String(result.valid),"معتبر",true);
+    log(symbol+": "+result.valid+" کندل معتبر","green");
+   }catch(error){
+    state.errors++;
+    addResult(symbol,"-",error.message,false);
+    log(symbol+": "+error.message,"red");
    }
 
-   $("successCount").textContent=String(successes);
-   $("validCount").textContent=formatNumber(totalValid);
-   $("errorCount").textContent=String(totalErrors);
+   state.scanned++;
+   $("scannedCount").textContent=String(state.scanned);
+   $("validCount").textContent=String(state.valid);
+   progress(20+state.scanned/SYMBOLS.length*80,
+    "بررسی "+state.scanned+" از "+SYMBOLS.length);
   }
 
-  $("lastTime").textContent=new Date().toLocaleTimeString("fa-IR");
-  $("scanStatus").innerHTML=successes?
-   `<span class="good">بررسی تمام شد: ${successes} موفق، ${totalErrors} ناموفق</span>`:
-   '<span class="bad">بررسی انجام شد اما کندلی دریافت نشد</span>';
+  if(state.valid===SYMBOLS.length){
+   $("finalStatus").textContent="عیب‌یابی موفق";
+   $("finalStatus").className="value green";
+   $("finalDetail").textContent="هر ۵ بازار دارای کندل معتبر هستند.";
+   log("تمام آزمایش‌ها موفق بودند.","green");
+  }else if(state.valid>0){
+   $("finalStatus").textContent="نیازمند بررسی";
+   $("finalStatus").className="value yellow";
+   $("finalDetail").textContent=state.valid+" بازار از ۵ بازار معتبر بودند.";
+  }else{
+   $("finalStatus").textContent="عیب‌یابی ناموفق";
+   $("finalStatus").className="value red";
+   $("finalDetail").textContent="هیچ بازار معتبری دریافت نشد.";
+  }
+  progress(100,"عیب‌یابی پایان یافت");
 
-  log("پایان عیب‌یابی. هیچ معامله‌ای انجام نشد.");
- }catch(e){
-  $("scanStatus").innerHTML='<span class="bad">'+escapeHtml(e.message)+'</span>';
-  log("خطای کلی: "+e.message);
+ }catch(error){
+  $("finalStatus").textContent="خطای ارتباط";
+  $("finalStatus").className="value red";
+  $("finalDetail").textContent=error.message;
+  apiStatus("خطا",error.message,"red");
+  log("خطای اصلی: "+error.message,"red");
+  progress(100,"توقف با خطا");
  }finally{
-  busy=false;
-  $("scanBtn").disabled=false;
-  $("marketBtn").disabled=false;
+  state.busy=false;
+  $("diagnosticBtn").disabled=false;
+  log("پایان عیب‌یابی؛ هیچ معامله‌ای انجام نشد.");
  }
 }
 
-/* فقط بررسی وجود اطلاعات قدیمی؛ هیچ تغییری در آن ایجاد نمی‌شود. */
-try{
- const oldData=localStorage.getItem(STORAGE_KEY);
- log(oldData?
-  "اطلاعات ذخیره‌شده نسخه قبلی موجود است؛ بدون تغییر باقی می‌ماند.":
-  "کلید اطلاعات قبلی پیدا نشد؛ هیچ داده‌ای ساخته یا پاک نشد.");
-}catch(e){
- log("خواندن وضعیت ذخیره‌سازی ممکن نیست.");
+window.addEventListener("error",function(event){
+ log("خطای JavaScript: "+(event.message||"نامشخص"),"red");
+});
+window.addEventListener("unhandledrejection",function(event){
+ var reason=event.reason&&event.reason.message?event.reason.message:String(event.reason);
+ log("خطای Promise: "+reason,"red");
+});
+
+function initialize(){
+ $("diagnosticBtn").addEventListener("click",runDiagnostic);
+ $("marketBtn").addEventListener("click",loadMarkets);
+ $("clearBtn").addEventListener("click",function(){
+  if(state.busy)return;
+  $("logs").innerHTML="";
+  $("results").innerHTML="<tr><td colspan='3'>گزارش پاک شد</td></tr>";
+  log("گزارش‌ها پاک شدند.");
+ });
+ log("دکمه‌ها فعال شدند.","green");
+ log("سیستم فقط خواندنی است.");
+ loadMarkets();
 }
 
-loadMarkets();
+if(document.readyState==="loading"){
+ document.addEventListener("DOMContentLoaded",initialize);
+}else{
+ initialize();
+}
+})();
 </script>
 </body>
 </html>

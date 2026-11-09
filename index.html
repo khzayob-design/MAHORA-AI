@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d19">
-<title>MAHORA AI V3</title>
+<title>MAHORA AI V4</title>
 <style>
 :root{
 --bg:#080d19;--panel:#111a2b;--panel2:#172238;
@@ -53,7 +53,7 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
 <header>
 <div>
 <div class="logo">MAHORA AI</div>
-<div class="subtitle">V3 | PAPER TRADING SYSTEM</div>
+<div class="subtitle">V4 | PAPER TRADING SYSTEM</div>
 </div>
 <span id="systemStatus" class="status off">خاموش</span>
 </header>
@@ -80,16 +80,16 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
 سرمایه اولیه: ۱۰ میلیون | هر معامله: ۱ میلیون تومان |
 حداکثر ۳ معامله باز | حد ضرر ۲٪ | حد سود ۴٪
 </p>
-<p class="notice">معاملات واقعی غیرفعال هستند.</p>
+<p class="notice">فقط معاملات آزمایشی؛ معامله واقعی غیرفعال است.</p>
 </div>
 
 <div class="panel">
 <h3>موتور معاملاتی</h3>
 <div class="engine">
-<div><b>MAHORA 15M</b><div class="subtitle">تحلیل کندل ۱۵ دقیقه‌ای</div></div>
+<div><b>MAHORA 15M</b><div class="subtitle">تحلیل کندل بسته‌شده ۱۵ دقیقه‌ای</div></div>
 <span id="engineStatus" class="status off">آماده</span>
 </div>
-<p class="notice">حداقل ۶ رأی خرید از ۱۰ سیگنال برای ورود لازم است.</p>
+<p class="notice">حداقل ۶ رأی معتبر از ۱۰ سیگنال برای ورود لازم است.</p>
 </div>
 
 <div class="panel">
@@ -165,10 +165,10 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
 
 <div class="panel">
 <h3>گزارش فعالیت</h3>
-<div id="log">MAHORA AI V3 آماده است.</div>
+<div id="log">MAHORA AI V4 آماده است.</div>
 </div>
 
-<footer>MAHORA AI V3 | PAPER TRADING ONLY</footer>
+<footer>MAHORA AI V4 | PAPER TRADING ONLY</footer>
 </div>
 
 <script>
@@ -188,9 +188,10 @@ const CFG={
  fee:0.001,
  slip:0.0005,
  minVotes:6,
- timeout:12000,
+ timeout:15000,
  priceInterval:15000,
- scanInterval:15000,
+ scanInterval:60000,
+ batchSize:5,
  candleSeconds:900
 };
 
@@ -205,13 +206,17 @@ let state={
  history:[],
  balance:CAPITAL,
  cursor:0,
- scanning:false,
  generation:0,
  priceTimer:null,
  scanTimer:null,
  lastTraded:{},
- lastSignals:{}
+ lastSignals:{},
+ dailyLocked:false
 };
+
+let priceBusy=false;
+let scanBusy=false;
+let discoveryBusy=false;
 
 function log(s){
  const e=document.createElement("div");
@@ -230,22 +235,27 @@ function save(){
  lastSignals:state.lastSignals,
  cursor:state.cursor
  }));
- }catch(e){log("خطا در ذخیره اطلاعات");}
+ }catch(e){log("خطای ذخیره‌سازی اطلاعات");}
 }
 
 function load(){
  try{
  const s=JSON.parse(localStorage.getItem(KEY)||"null");
  if(!s)return;
+
  if(Number.isFinite(Number(s.balance))&&Number(s.balance)>=0)
  state.balance=Number(s.balance);
+
  state.positions=Array.isArray(s.positions)?s.positions:[];
  state.history=Array.isArray(s.history)?s.history:[];
  state.lastTraded=s.lastTraded||{};
  state.lastSignals=s.lastSignals||{};
  state.cursor=Number(s.cursor)||0;
- log("اطلاعات حساب قبلی بازیابی شد.");
- }catch(e){log("اطلاعات قبلی قابل خواندن نیست.");}
+
+ log("اطلاعات حساب آزمایشی بازیابی شد.");
+ }catch(e){
+ log("اطلاعات ذخیره‌شده قابل خواندن نیست.");
+ }
 }
 
 async function getJSON(url){
@@ -264,11 +274,13 @@ async function getJSON(url){
  }
 }
 
+/* قیمت API به ریال است؛ نمایش و محاسبات به تومان */
 function marketPrice(stats,symbol){
  const base=symbol.replace(/IRT$/i,"").toLowerCase();
  const item=stats[base+"-rls"];
  if(!item)return 0;
- return Number(item.latest)/10;
+ const value=Number(item.latest);
+ return value>0?value/10:0;
 }
 
 function updateMarketStats(stats){
@@ -282,12 +294,15 @@ function updateMarketStats(stats){
 }
 
 async function discoverMarkets(){
+ if(discoveryBusy)return false;
+ discoveryBusy=true;
+
  try{
  $("apiStatus").textContent="در حال اتصال";
  const d=await getJSON(API+"/market/stats?dstCurrency=rls");
  if(d.status!=="ok"||!d.stats)throw Error("پاسخ نامعتبر بازار");
 
- state.markets=Object.entries(d.stats)
+ const fresh=Object.entries(d.stats)
  .filter(([k,v])=>/^[a-z0-9]+-rls$/i.test(k)&&Number(v?.latest)>0)
  .map(([k,v])=>({
  symbol:k.split("-")[0].toUpperCase()+"IRT",
@@ -297,46 +312,54 @@ async function discoverMarkets(){
  updatedAt:Date.now()
  }));
 
+ if(!fresh.length)throw Error("بازار معتبری دریافت نشد");
+
+ state.markets=fresh;
+
  $("apiStatus").textContent="متصل";
  $("apiStatus").className="green";
- $("marketCount").textContent=state.markets.length;
- $("eligibleCount").textContent=state.markets.filter(m=>!m.closed).length;
+ $("marketCount").textContent=fresh.length;
+ $("eligibleCount").textContent=fresh.filter(m=>!m.closed).length;
  $("errorInfo").textContent="";
+
  renderMarket();
- log("بازارها دریافت شدند: "+state.markets.length);
+ log("بازارها دریافت شدند: "+fresh.length);
  return true;
+
  }catch(e){
  $("apiStatus").textContent="خطا";
  $("apiStatus").className="red";
  $("errorInfo").textContent="خطای اتصال: "+e.message;
  log("اتصال بازار ناموفق: "+e.message);
  return false;
+
+ }finally{
+ discoveryBusy=false;
  }
 }
 
-/* دریافت مستقل قیمت؛ حتی وقتی سیستم معاملاتی خاموش است */
-let priceBusy=false;
-
+/* دریافت قیمت مستقل از موتور معاملاتی */
 async function refreshPrices(){
  if(priceBusy)return;
  priceBusy=true;
+
  try{
  const d=await getJSON(API+"/market/stats?dstCurrency=rls");
  if(d.status!=="ok"||!d.stats)throw Error("پاسخ قیمت نامعتبر است");
 
  updateMarketStats(d.stats);
 
- const copy=[...state.positions];
- for(const p of copy){
+ for(const p of [...state.positions]){
  const price=marketPrice(d.stats,p.symbol);
  if(!(price>0))continue;
+
  p.current=price;
  p.lastPriceAt=Date.now();
 
  if(price<=p.stopLoss){
- closePosition(p,price,"حد ضرر ۲٪");
+ closePosition(p,price,"حد ضرر");
  }else if(price>=p.takeProfit){
- closePosition(p,price,"حد سود ۴٪");
+ closePosition(p,price,"حد سود");
  }
  }
 
@@ -349,6 +372,8 @@ async function refreshPrices(){
 
  }catch(e){
  $("priceInfo").textContent="خطای دریافت قیمت: "+e.message;
+ log("خطای دریافت قیمت: "+e.message);
+
  }finally{
  priceBusy=false;
  }
@@ -362,7 +387,7 @@ function priceLoop(){
  },CFG.priceInterval);
 }
 
-/* اندیکاتورها */
+/* ابزارهای تحلیل تکنیکال */
 function ema(a,p){
  if(a.length<p)return null;
  const k=2/(p+1);
@@ -376,49 +401,168 @@ function sma(a,p){
  return a.slice(-p).reduce((x,y)=>x+y,0)/p;
 }
 
-function rsi(a){
- if(a.length<15)return 50;
+function rsi(a,p=14){
+ if(a.length<p+1)return null;
  let gain=0,loss=0;
- for(let i=a.length-14;i<a.length;i++){
+
+ for(let i=a.length-p;i<a.length;i++){
  const d=a[i]-a[i-1];
- if(d>0)gain+=d;else loss-=d;
+ if(d>0)gain+=d;
+ else loss-=d;
  }
- if(loss===0)return 100;
+
+ if(loss===0)return gain===0?50:100;
  return 100-100/(1+gain/loss);
 }
 
-function macd(a){
- return ema(a,12)-ema(a,26);
+function macdValues(a){
+ if(a.length<35)return null;
+ const line=[];
+ for(let i=25;i<a.length;i++){
+ const part=a.slice(0,i+1);
+ line.push(ema(part,12)-ema(part,26));
+ }
+ if(line.length<10)return null;
+ const signal=ema(line,9);
+ return {line:line[line.length-1],signal};
+}
+
+function bollinger(a,p=20){
+ if(a.length<p)return null;
+ const values=a.slice(-p);
+ const mid=sma(values,p);
+ const variance=values.reduce((s,x)=>s+Math.pow(x-mid,2),0)/p;
+ const sd=Math.sqrt(variance);
+ return {mid,upper:mid+2*sd,lower:mid-2*sd};
+}
+
+function adx(c,p=14){
+ if(c.length<2*p+2)return null;
+
+ const tr=[],plus=[],minus=[];
+
+ for(let i=1;i<c.length;i++){
+ const cur=c[i],prev=c[i-1];
+ tr.push(Math.max(
+ cur.h-cur.l,
+ Math.abs(cur.h-prev.c),
+ Math.abs(cur.l-prev.c)
+ ));
+
+ const up=cur.h-prev.h;
+ const down=prev.l-cur.l;
+ plus.push(up>down&&up>0?up:0);
+ minus.push(down>up&&down>0?down:0);
+ }
+
+ const dx=[];
+ for(let i=p;i<tr.length;i++){
+ const trSum=tr.slice(i-p+1,i+1).reduce((a,b)=>a+b,0);
+ const pSum=plus.slice(i-p+1,i+1).reduce((a,b)=>a+b,0);
+ const mSum=minus.slice(i-p+1,i+1).reduce((a,b)=>a+b,0);
+
+ if(trSum<=0)continue;
+ const pdi=100*pSum/trSum;
+ const mdi=100*mSum/trSum;
+ const total=pdi+mdi;
+ dx.push(total===0?0:100*Math.abs(pdi-mdi)/total);
+ }
+
+ if(dx.length<p)return null;
+ return sma(dx.slice(-p),p);
+}
+
+function stochastic(c,p=14){
+ if(c.length<p+2)return null;
+
+ function value(end){
+ const part=c.slice(end-p,end);
+ const high=Math.max(...part.map(x=>x.h));
+ const low=Math.min(...part.map(x=>x.l));
+ if(high===low)return 50;
+ return (c[end-1].c-low)/(high-low)*100;
+ }
+
+ const current=value(c.length);
+ const previous=value(c.length-1);
+ return {current,previous};
 }
 
 function analyze(c){
+ if(c.length<50)return null;
+
  const close=c.map(x=>x.c);
  const last=c[c.length-1];
  const prev=c[c.length-2];
- const mid=sma(close,20);
- const avgVol=sma(c.map(x=>x.v),20)||0;
- const vw=c.slice(-20).reduce((s,x)=>s+x.c*x.v,0)/
- (c.slice(-20).reduce((s,x)=>s+x.v,0)||1);
- const high=Math.max(...c.slice(-21,-1).map(x=>x.h));
- const low=Math.min(...c.slice(-20).map(x=>x.l));
- const st=last.h===last.l?50:
- (last.c-low)/(Math.max(...c.slice(-14).map(x=>x.h))-low||1)*100;
+
+ const fast=ema(close.slice(-60),9);
+ const slow=ema(close.slice(-60),21);
+ const rv=rsi(close);
+ const mac=macdValues(close);
+ const bb=bollinger(close);
+ const adxValue=adx(c);
+ const st=stochastic(c);
+
+ if([fast,slow,rv,mac?.line,mac?.signal,bb?.mid,adxValue,st?.current,st?.previous]
+ .some(x=>x===null||!Number.isFinite(x)))return null;
+
+ const recent=c.slice(-20);
+ const volumeSum=recent.reduce((s,x)=>s+x.v,0);
+ const vwap=volumeSum>0?
+ recent.reduce((s,x)=>s+x.c*x.v,0)/volumeSum:null;
+ const avgVol=sma(c.map(x=>x.v),20);
+
+ const prior=c.slice(-21,-1);
+ const channelHigh=Math.max(...prior.map(x=>x.h));
+ const channelLow=Math.min(...prior.map(x=>x.l));
+
+ const support=Math.min(...c.slice(-20).map(x=>x.l));
+ const resistance=Math.max(...c.slice(-20).map(x=>x.h));
 
  const votes=[
- ema(close.slice(-80),9)>ema(close.slice(-80),21),
- rsi(close)>52&&rsi(close)<70,
- macd(close)>0,
- mid!==null&&last.c>mid,
- last.c>vw,
- last.c>prev.c,
- last.c>high,
- avgVol>0&&last.v>avgVol*1.5,
- st>prev.c*0+50&&st<85,
- last.c>low
+ fast>slow,
+ rv>52&&rv<70,
+ mac.line>mac.signal,
+ last.c>bb.mid,
+ vwap!==null&&last.c>vwap,
+ adxValue>=20,
+ last.c>channelHigh,
+ avgVol>0&&last.v>avgVol*1.2,
+ st.current>st.previous&&st.current>50&&st.current<85,
+ last.c>support&&(resistance-last.c)/last.c<0.025
  ];
 
  const score=votes.filter(Boolean).length;
- return {score,signal:score>=CFG.minVotes?"BUY":"WAIT",price:last.c,time:last.t};
+
+ return {
+ score,
+ votes,
+ signal:score>=CFG.minVotes?"BUY":"WAIT",
+ price:last.c,
+ time:last.t
+ };
+}
+
+/* تطبیق واحد قیمت کندل با قیمت زنده بازار */
+function normalizeCandles(rows,livePrice){
+ if(!rows.length||!(livePrice>0))throw Error("قیمت زنده نامعتبر است");
+
+ const last=rows[rows.length-1];
+ const ratio=last.c/livePrice;
+
+ let factor=1;
+ if(ratio>7&&ratio<13)factor=0.1;
+ else if(ratio>0.07&&ratio<0.13)factor=10;
+ else if(ratio<0.7||ratio>1.3)
+ throw Error("اختلاف قیمت کندل و بازار");
+
+ return rows.map(x=>({
+ ...x,
+ o:x.o*factor,
+ h:x.h*factor,
+ l:x.l*factor,
+ c:x.c*factor
+ }));
 }
 
 async function candles(m){
@@ -427,13 +571,17 @@ async function candles(m){
  "&resolution=15&countback=160&to="+Math.floor(Date.now()/1000);
 
  const d=await getJSON(url);
- if(d.s!=="ok"||!Array.isArray(d.c)||!Array.isArray(d.t))
- throw Error("کندل دریافت نشد");
+
+ if(d.s!=="ok"||!Array.isArray(d.c)||!Array.isArray(d.t)||
+ !Array.isArray(d.o)||!Array.isArray(d.h)||!Array.isArray(d.l))
+ throw Error("داده کندل نامعتبر است");
 
  const rows=[];
+
  for(let i=0;i<d.c.length;i++){
  const t=Number(d.t[i]);
  if(!t||t+CFG.candleSeconds>Date.now()/1000)continue;
+
  const row={
  t,
  o:Number(d.o[i]),
@@ -442,58 +590,79 @@ async function candles(m){
  c:Number(d.c[i]),
  v:Number(d.v?.[i])||0
  };
- if([row.o,row.h,row.l,row.c].every(x=>x>0))rows.push(row);
+
+ if([row.o,row.h,row.l,row.c].every(x=>Number.isFinite(x)&&x>0)&&
+ row.h>=row.l&&row.h>=row.o&&row.h>=row.c&&
+ row.l<=row.o&&row.l<=row.c)rows.push(row);
  }
- if(rows.length<40)throw Error("کندل کافی نیست");
 
- const ratio=rows[rows.length-1].c/m.latest;
- if(ratio<0.85||ratio>1.15)throw Error("اختلاف واحد قیمت کندل");
+ if(rows.length<50)throw Error("کندل کافی نیست");
 
- return rows;
+ return normalizeCandles(rows,m.latest);
 }
 
+/* مدیریت سرمایه و سود */
 function exposure(){
- return state.positions.reduce((s,p)=>s+p.quantity*p.entry+p.entryFee,0);
-}
-
-function dailyPnl(){
- const today=new Date().toDateString();
- const closed=state.history.filter(x=>new Date(x.time).toDateString()===today)
- .reduce((s,x)=>s+x.pnl,0);
- const floating=state.positions.reduce((s,p)=>s+netPnl(p),0);
- return closed+floating;
+ return state.positions.reduce((s,p)=>
+ s+p.quantity*p.entry+p.entryFee,0);
 }
 
 function netPnl(p){
  const exit=p.current*(1-CFG.slip);
- return exit*p.quantity*(1-CFG.fee)-p.entry*p.quantity-p.entryFee;
+ return exit*p.quantity*(1-CFG.fee)-
+ p.entry*p.quantity-p.entryFee;
+}
+
+function dailyPnl(){
+ const today=new Date().toDateString();
+
+ const closed=state.history
+ .filter(x=>new Date(x.time).toDateString()===today)
+ .reduce((s,x)=>s+x.pnl,0);
+
+ const floating=state.positions.reduce((s,p)=>s+netPnl(p),0);
+
+ return closed+floating;
 }
 
 function openPosition(m,r){
- if(!state.running)return;
- if(state.positions.length>=CFG.maxPositions)return;
- if(state.positions.some(p=>p.symbol===m.symbol))return;
- if(dailyPnl()<=-CFG.dailyLoss)return;
- if(exposure()+TRADE_AMOUNT*(1+CFG.fee)>CAPITAL*CFG.maxExposure)return;
+ if(!state.running)return false;
+ if(state.dailyLocked)return false;
+ if(state.positions.length>=CFG.maxPositions)return false;
+ if(state.positions.some(p=>p.symbol===m.symbol))return false;
+ if(dailyPnl()<=-CFG.dailyLoss)return false;
+
+ if(exposure()+TRADE_AMOUNT*(1+CFG.fee)>CAPITAL*CFG.maxExposure)
+ return false;
 
  const entry=r.price*(1+CFG.slip);
  const quantity=TRADE_AMOUNT/entry;
  const entryFee=TRADE_AMOUNT*CFG.fee;
- const cost=TRADE_AMOUNT+entryFee;
- if(cost>state.balance)return;
+ const cost=quantity*entry+entryFee;
+
+ if(cost>state.balance)return false;
 
  state.balance-=cost;
+
  state.positions.push({
- id:Date.now()+"_"+Math.random(),
- symbol:m.symbol,entry,current:r.price,quantity,entryFee,
+ id:Date.now()+"_"+Math.random().toString(36).slice(2),
+ symbol:m.symbol,
+ entry,
+ current:r.price,
+ quantity,
+ entryFee,
  stopLoss:entry*(1-CFG.stop),
  takeProfit:entry*(1+CFG.target),
- lastPriceAt:Date.now()
+ lastPriceAt:Date.now(),
+ signalTime:r.time
  });
+
  state.lastTraded[m.symbol]=r.time;
+
  save();
  log("ورود آزمایشی "+m.symbol+" | امتیاز "+r.score+"/10");
  renderAll();
+ return true;
 }
 
 function closePosition(p,price,reason){
@@ -501,63 +670,100 @@ function closePosition(p,price,reason){
  if(i<0||!(price>0))return;
 
  const exit=price*(1-CFG.slip);
- const proceeds=exit*p.quantity;
- const fee=proceeds*CFG.fee;
- const pnl=proceeds-fee-p.entry*p.quantity-p.entryFee;
+ const proceeds=p.quantity*exit;
+ const exitFee=proceeds*CFG.fee;
 
- state.balance+=proceeds-fee;
+ const pnl=proceeds-exitFee-
+ p.entry*p.quantity-p.entryFee;
+
+ state.balance+=proceeds-exitFee;
+
  state.history.unshift({
- symbol:p.symbol,entry:p.entry,exit,pnl,reason,time:Date.now()
+ symbol:p.symbol,
+ entry:p.entry,
+ exit,
+ pnl,
+ reason,
+ time:Date.now()
  });
+
  state.history=state.history.slice(0,500);
  state.positions.splice(i,1);
+
  save();
  log("خروج "+p.symbol+" | "+reason+" | "+fmt(pnl));
  renderAll();
 }
 
-let scanBusy=false;
+function checkDailyLimit(){
+ if(dailyPnl()<=-CFG.dailyLoss&&!state.dailyLocked){
+ state.dailyLocked=true;
+ stopSystem();
+ log("سقف زیان روزانه فعال شد؛ ورود جدید ممنوع است.");
+ }
+}
 
+/* اسکن محدود و مرحله‌ای بازارها */
 async function scanMarkets(generation){
  if(scanBusy||!state.running)return;
  scanBusy=true;
+
  try{
- const eligible=state.markets.filter(m=>!m.closed&&m.latest>0);
- if(!eligible.length){
- await discoverMarkets();
+ if(!state.markets.length){
+ const ok=await discoverMarkets();
+ if(!ok)throw Error("بازارها دریافت نشدند");
  }
+
  const list=state.markets.filter(m=>!m.closed&&m.latest>0);
  if(!list.length)throw Error("بازار فعالی موجود نیست");
 
  const batch=[];
- for(let i=0;i<Math.min(10,list.length);i++){
+ for(let i=0;i<Math.min(CFG.batchSize,list.length);i++){
  batch.push(list[(state.cursor+i)%list.length]);
  }
+
  state.cursor=(state.cursor+batch.length)%list.length;
 
  let done=0;
+
  for(let i=0;i<batch.length;i++){
  if(!state.running||generation!==state.generation)break;
+
+ const m=batch[i];
+
  try{
- const c=await candles(batch[i]);
+ const c=await candles(m);
  const r=analyze(c);
- state.lastSignals[batch[i].symbol]=r.signal;
+
+ if(!r)throw Error("تحلیل کافی نیست");
+
+ state.lastSignals[m.symbol]=r.signal;
+
  if(r.signal==="BUY"&&
- state.lastTraded[batch[i].symbol]!==r.time){
- openPosition(batch[i],r);
+ Number(state.lastTraded[m.symbol]||0)!==r.time){
+ openPosition(m,r);
  }
+
  done++;
+
  }catch(e){
- log(batch[i].symbol+": "+e.message);
+ log(m.symbol+": "+e.message);
  }
+
  $("scannedCount").textContent=done;
  $("scanProgress").style.width=((i+1)/batch.length*100)+"%";
+
+ checkDailyLimit();
+ if(!state.running)break;
  }
+
  $("scanInfo").textContent="پایان اسکن | موفق: "+done;
  save();
+
  }catch(e){
  $("errorInfo").textContent=e.message;
  log("خطای اسکن: "+e.message);
+
  }finally{
  scanBusy=false;
  }
@@ -566,6 +772,7 @@ async function scanMarkets(generation){
 function scheduleScan(g){
  clearTimeout(state.scanTimer);
  if(!state.running||g!==state.generation)return;
+
  state.scanTimer=setTimeout(async()=>{
  await scanMarkets(g);
  scheduleScan(g);
@@ -574,11 +781,28 @@ function scheduleScan(g){
 
 function startSystem(){
  if(state.running)return;
+
+ if(!state.markets.length){
+ log("ابتدا باید بازارها دریافت شوند.");
+ discoverMarkets();
+ return;
+ }
+
+ if(dailyPnl()<=-CFG.dailyLoss){
+ state.dailyLocked=true;
+ alert("سقف زیان روزانه پر شده است.");
+ return;
+ }
+
+ state.dailyLocked=false;
  state.running=true;
  state.generation++;
+
  const g=state.generation;
+
  updateStatus();
  log("Paper Trading شروع شد.");
+
  scanMarkets(g).finally(()=>scheduleScan(g));
 }
 
@@ -631,21 +855,25 @@ function updateDashboard(){
  const closed=state.history.reduce((s,h)=>s+h.pnl,0);
  const floating=state.positions.reduce((s,p)=>s+netPnl(p),0);
  const pnl=closed+floating;
+ const today=dailyPnl();
 
  $("balance").textContent=fmt(state.balance);
  $("openValue").textContent=fmt(open);
  $("totalPnl").textContent=fmt(pnl);
  $("totalPnl").className=pnl>=0?"green":"red";
  $("tradeCount").textContent=state.history.length+state.positions.length;
- $("riskInfo").textContent="سود و زیان امروز: "+fmt(dailyPnl())+
- (dailyPnl()<=-CFG.dailyLoss?" | سقف زیان فعال":"");
+
+ $("riskInfo").textContent="سود و زیان امروز: "+fmt(today)+
+ (today<=-CFG.dailyLoss?" | سقف زیان فعال":"");
 }
 
 function updateStatus(){
  $("systemStatus").textContent=state.running?"سیستم روشن":"سیستم خاموش";
  $("systemStatus").className=state.running?"status on":"status off";
+
  $("engineStatus").textContent=state.running?"فعال":"آماده";
  $("engineStatus").className=state.running?"status on":"status off";
+
  $("startBtn").disabled=state.running;
 }
 
@@ -662,13 +890,17 @@ function resetPaper(){
  alert("ابتدا سیستم را متوقف کن.");
  return;
  }
+
  if(!confirm("تمام اطلاعات حساب آزمایشی پاک شود؟"))return;
+
  state.balance=CAPITAL;
  state.positions=[];
  state.history=[];
  state.lastTraded={};
  state.lastSignals={};
  state.cursor=0;
+ state.dailyLocked=false;
+
  save();
  renderAll();
  log("حساب آزمایشی بازنشانی شد.");
@@ -678,13 +910,12 @@ async function init(){
  load();
  renderAll();
 
- log("MAHORA AI V3 آماده است.");
+ log("MAHORA AI V4 آماده است.");
  log("سیستم معاملاتی در حالت خاموش است.");
 
  await discoverMarkets();
-
- // قیمت‌ها مستقل از موتور معاملاتی به‌روزرسانی می‌شوند
  await refreshPrices();
+
  priceLoop();
 }
 

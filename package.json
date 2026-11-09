@@ -1,0 +1,12 @@
+{
+  "name": "mahora-ai-engine",
+  "version": "1.0.0",
+  "description": "MAHORA AI Paper Trading Engine",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

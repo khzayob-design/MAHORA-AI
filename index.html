@@ -5,110 +5,137 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d19">
-<title>MAHORA AI V6</title>
+<title>MAHORA AI V7</title>
 <style>
-:root{--bg:#080d19;--panel:#111a2b;--border:#263650;--text:#edf3ff;--muted:#93a4bd;--green:#19c784;--red:#ff596b;--yellow:#f5bd4f;--blue:#55a8ff}
+:root{--bg:#080d19;--panel:#111a2b;--panel2:#17243a;--border:#263650;--text:#edf3ff;--muted:#93a4bd;--green:#19c784;--red:#ff596b;--yellow:#f5bd4f;--blue:#55a8ff}
 *{box-sizing:border-box}
-body{margin:0;padding:14px;background:var(--bg);color:var(--text);font:14px Tahoma,Arial,sans-serif}
-.container{max-width:850px;margin:auto}
-header{text-align:center;padding:20px 5px;border-bottom:1px solid var(--border);margin-bottom:15px}
-h1{font-size:24px;margin:0 0 8px}
-.muted,.small{color:var(--muted);font-size:12px}
-.notice{background:#392b16;color:#ffd78a;padding:12px;border-radius:10px;line-height:2;margin-bottom:14px}
+body{margin:0;padding:12px;background:var(--bg);color:var(--text);font:14px Tahoma,Arial,sans-serif}
+.container{max-width:1000px;margin:auto}
+header{text-align:center;padding:20px 5px;border-bottom:1px solid var(--border);margin-bottom:14px}
+h1{font-size:25px;margin:0 0 8px}
+.subtitle,.small{font-size:11px;color:var(--muted)}
+.notice{padding:12px;background:#392b16;border:1px solid #715324;color:#ffdc98;border-radius:10px;line-height:2;margin-bottom:14px}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;min-width:0}
 .full{grid-column:1/-1}
-.label{color:var(--muted);font-size:12px;margin-bottom:9px}
+.label{font-size:12px;color:var(--muted);margin-bottom:9px}
 .value{font-size:19px;font-weight:bold;overflow-wrap:anywhere}
-.small{margin-top:7px}
+.small{margin-top:7px;line-height:1.8}
 .green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}.blue{color:var(--blue)}
 button{width:100%;padding:14px;border:0;border-radius:10px;font:bold 14px Tahoma;cursor:pointer;margin-top:9px}
-button:disabled{opacity:.5}
+button:disabled{opacity:.5;cursor:not-allowed}
 .primary{background:var(--blue);color:#07111f}
-.secondary{background:#17243a;color:white;border:1px solid var(--border)}
+.secondary{background:var(--panel2);color:white;border:1px solid var(--border)}
 .danger{background:#3b1823;color:#ff9ba6;border:1px solid #793343}
 .progress{height:8px;background:#263650;border-radius:10px;overflow:hidden;margin-top:12px}
 .bar{height:100%;width:0;background:var(--blue);transition:width .2s}
-.log{background:#070c15;border:1px solid var(--border);border-radius:10px;padding:12px;height:220px;overflow:auto;font-size:12px;line-height:2;overflow-wrap:anywhere}
-.logline{border-bottom:1px solid #18243a;padding:3px 0}
+.log{height:160px;overflow:auto;background:#070c15;border:1px solid var(--border);border-radius:10px;padding:10px;font-size:11px;line-height:2}
+.logline{border-bottom:1px solid #18243a;overflow-wrap:anywhere}
 table{width:100%;border-collapse:collapse;font-size:12px}
-td,th{padding:10px 5px;border-bottom:1px solid var(--border);text-align:right;overflow-wrap:anywhere}
+td,th{padding:10px 6px;border-bottom:1px solid var(--border);text-align:right;white-space:nowrap}
 th{color:var(--muted)}
+.tablewrap{overflow-x:auto}
+.signal{font-weight:bold}
 footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
-@media(max-width:420px){body{padding:9px}.value{font-size:16px}h1{font-size:21px}}
+@media(max-width:420px){body{padding:8px}.value{font-size:16px}h1{font-size:21px}.card{padding:11px}}
 </style>
 </head>
 <body>
 <div class="container">
 <header>
 <h1>MAHORA AI</h1>
-<div class="muted">نسخه V6 | عیب‌یابی مستقل بازار و کندل</div>
+<div class="subtitle">نسخه V7 | موتور تحلیل ۱۰ استراتژی | تایم‌فریم ۱۵ دقیقه</div>
 </header>
 
 <div class="notice">
-<strong>حالت ایمن فعال است</strong><br>
-این نسخه فقط اطلاعات بازار و کندل‌ها را می‌خواند. هیچ سفارش یا معامله‌ای انجام نمی‌دهد.
+<strong>حالت ایمن و فقط تحلیل فعال است</strong><br>
+این نسخه فقط قیمت و کندل‌ها را دریافت و تحلیل می‌کند. هیچ سفارش خرید یا فروشی ثبت نمی‌شود. Paper Trading نیز هنوز فعال نیست.
 </div>
 
 <div class="grid">
 <div class="card">
 <div class="label">وضعیت سیستم</div>
-<div class="value green">خاموش و ایمن</div>
-<div class="small">معاملات غیرفعال</div>
+<div class="value green">تحلیل‌گر مستقل</div>
+<div class="small">بدون معامله و سفارش</div>
 </div>
 <div class="card">
-<div class="label">وضعیت API</div>
+<div class="label">ارتباط API</div>
 <div class="value yellow" id="apiStatus">بررسی نشده</div>
 <div class="small" id="apiDetail">منتظر اتصال</div>
 </div>
 <div class="card">
-<div class="label">سرمایه آزمایشی</div>
-<div class="value">۱۰,۰۰۰,۰۰۰</div>
-<div class="small">تومان | نمایشی</div>
+<div class="label">تایم‌فریم</div>
+<div class="value blue">۱۵ دقیقه</div>
+<div class="small">فقط کندل 15m</div>
 </div>
 <div class="card">
-<div class="label">تعداد بازارها</div>
+<div class="label">بازارهای تومانی</div>
 <div class="value" id="marketCount">۰</div>
-<div class="small" id="marketDetail">دریافت نشده</div>
+<div class="small">بازارهای شناسایی‌شده</div>
 </div>
 <div class="card">
-<div class="label">بازارهای بررسی‌شده</div>
+<div class="label">بازارهای تحلیل‌شده</div>
 <div class="value" id="scannedCount">۰</div>
 </div>
 <div class="card">
-<div class="label">بازارهای معتبر</div>
-<div class="value" id="validCount">۰</div>
+<div class="label">سیگنال‌های قوی</div>
+<div class="value" id="strongCount">۰</div>
 </div>
+
 <div class="card full">
-<div class="label">پیشرفت عیب‌یابی</div>
-<div class="value" id="progressText">آماده</div>
-<div class="progress"><div class="bar" id="progressBar"></div></div>
+<div class="label">کنترل موتور تحلیل</div>
+<button class="primary" id="scanBtn">شروع تحلیل بازارها</button>
+<button class="secondary" id="marketBtn">دریافت مجدد فهرست بازارها</button>
+<button class="danger" id="stopBtn">توقف تحلیل</button>
+<div class="progress"><div class="bar" id="bar"></div></div>
+<div class="small" id="progressText">آماده</div>
 </div>
+
 <div class="card full">
-<button class="primary" id="diagnosticBtn" type="button">شروع عیب‌یابی مستقل</button>
-<button class="secondary" id="marketBtn" type="button">دریافت مجدد بازارها</button>
-<button class="danger" id="clearBtn" type="button">پاک کردن گزارش‌ها</button>
-</div>
-<div class="card full">
-<div class="label">نتیجه کندل‌ها</div>
+<div class="label">۱۰ استراتژی فعال</div>
+<div class="tablewrap">
 <table>
-<thead><tr><th>بازار</th><th>کندل معتبر</th><th>وضعیت</th></tr></thead>
-<tbody id="results"><tr><td colspan="3">هنوز آزمایشی انجام نشده</td></tr></tbody>
+<thead><tr><th>استراتژی</th><th>وضعیت</th><th>توضیح</th></tr></thead>
+<tbody id="strategyList"></tbody>
 </table>
 </div>
+</div>
+
+<div class="card full">
+<div class="label">بهترین نتایج تحلیل بازارها</div>
+<div class="tablewrap">
+<table>
+<thead><tr><th>بازار</th><th>قیمت</th><th>امتیاز</th><th>تأیید</th><th>نتیجه</th></tr></thead>
+<tbody id="marketResults"><tr><td colspan="5">هنوز تحلیلی انجام نشده است</td></tr></tbody>
+</table>
+</div>
+</div>
+
+<div class="card full">
+<div class="label">جزئیات ۱۰ استراتژی بازار منتخب</div>
+<div class="value" id="selectedSymbol">بازاری انتخاب نشده</div>
+<div class="small" id="selectedScore">پس از تحلیل نمایش داده می‌شود.</div>
+<div class="tablewrap">
+<table>
+<thead><tr><th>استراتژی</th><th>سیگنال</th><th>توضیح</th></tr></thead>
+<tbody id="detailResults"><tr><td colspan="3">در انتظار تحلیل</td></tr></tbody>
+</table>
+</div>
+</div>
+
 <div class="card full">
 <div class="label">گزارش فعالیت</div>
-<div class="log" id="logs">
-<div class="logline">MAHORA AI V6 آماده است.</div>
+<div class="log" id="logs">MAHORA AI V7 آماده است.</div>
 </div>
-</div>
+
 <div class="card full">
-<div class="label">نتیجه نهایی</div>
-<div class="value yellow" id="finalStatus">در انتظار آزمایش</div>
-<div class="small" id="finalDetail">برای شروع دکمه عیب‌یابی را بزنید.</div>
+<div class="label">وضعیت نهایی</div>
+<div class="value yellow" id="finalStatus">در انتظار تحلیل</div>
+<div class="small" id="finalDetail">برای شروع، دکمه تحلیل بازارها را بزنید.</div>
 </div>
 </div>
-<footer>MAHORA AI V6 | READ ONLY | NO TRADING</footer>
+
+<footer>MAHORA AI V7 | 15M | 10 STRATEGIES | READ ONLY</footer>
 </div>
 
 <script>
@@ -116,232 +143,457 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 "use strict";
 
 var API="https://apiv2.nobitex.ir";
-var SYMBOLS=["BTCIRT","ETHIRT","BNBIRT","XRPIRT","DOGEIRT"];
-var state={busy:false,markets:[],scanned:0,valid:0,errors:0};
+var MAX_MARKETS=20;
+var MIN_CANDLES=100;
+var markets=[];
+var results=[];
+var busy=false;
+var stopRequested=false;
+var selected=null;
+
+var names=[
+"EMA Crossover",
+"RSI + Divergence",
+"MACD Momentum",
+"Bollinger Bands",
+"VWAP",
+"Ichimoku Cloud",
+"ADX + DMI",
+"Supertrend",
+"Stochastic RSI",
+"Volume Breakout"
+];
 
 function $(id){return document.getElementById(id)}
+function num(x){return Number(x)}
+function finite(x){return Number.isFinite(x)}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
 
 function log(message,type){
- var box=$("logs");
- var line=document.createElement("div");
- line.className="logline";
- var time=document.createElement("span");
- time.className="muted";
- time.textContent="["+new Date().toLocaleTimeString("fa-IR")+"] ";
- var content=document.createElement("span");
- content.textContent=String(message);
- content.className=type||"";
- line.appendChild(time);
- line.appendChild(content);
- box.appendChild(line);
- box.scrollTop=box.scrollHeight;
+ var el=document.createElement("div");
+ el.className="logline "+(type||"");
+ el.textContent="["+new Date().toLocaleTimeString("fa-IR")+"] "+message;
+ $("logs").appendChild(el);
+ $("logs").scrollTop=$("logs").scrollHeight;
 }
 
-function progress(value,label){
- $("progressBar").style.width=Math.min(100,value)+"%";
- $("progressText").textContent=label;
+function setApi(a,b,c){
+ $("apiStatus").textContent=a;
+ $("apiStatus").className="value "+c;
+ $("apiDetail").textContent=b;
 }
 
-function apiStatus(status,detail,color){
- $("apiStatus").textContent=status;
- $("apiStatus").className="value "+color;
- $("apiDetail").textContent=detail;
+function progress(p,t){
+ $("bar").style.width=Math.max(0,Math.min(100,p))+"%";
+ $("progressText").textContent=t;
+}
+
+function renderStrategies(){
+ $("strategyList").innerHTML="";
+ names.forEach(function(n){
+  var tr=document.createElement("tr");
+  [n,"آماده","تحلیل روی کندل ۱۵ دقیقه"].forEach(function(v){
+   var td=document.createElement("td");
+   td.textContent=v;
+   tr.appendChild(td);
+  });
+  $("strategyList").appendChild(tr);
+ });
 }
 
 async function request(url,options){
  var controller=new AbortController();
- var timer=setTimeout(function(){controller.abort()},12000);
+ var timer=setTimeout(function(){controller.abort()},15000);
  try{
   var response=await fetch(url,Object.assign({},options||{},{
-   signal:controller.signal,
-   cache:"no-store"
+   signal:controller.signal,cache:"no-store"
   }));
   if(!response.ok)throw new Error("HTTP "+response.status);
   return await response.json();
- }finally{
-  clearTimeout(timer);
- }
+ }finally{clearTimeout(timer)}
 }
 
-async function fetchMarkets(){
+async function getMarkets(){
  log("در حال دریافت فهرست بازارها...");
  var data=await request(API+"/market/stats",{
   method:"POST",
   headers:{"Content-Type":"application/json"},
   body:JSON.stringify({})
  });
- if(!data||data.status!=="ok")throw new Error("پاسخ بازار معتبر نیست");
+ if(!data||data.status!=="ok"||!data.stats)throw new Error("ساختار پاسخ بازار معتبر نیست");
+
  var list=[];
- if(data.stats&&typeof data.stats==="object")list=Object.keys(data.stats);
- if(data.markets&&Array.isArray(data.markets)){
-  list=data.markets.map(function(x){
-   return typeof x==="string"?x:(x.symbol||x.name||"");
-  }).filter(Boolean);
- }
- if(!list.length)throw new Error("فهرست بازارها خالی است");
- state.markets=list;
+ Object.keys(data.stats).forEach(function(symbol){
+  var s=data.stats[symbol]||{};
+  if(!/IRT$/i.test(symbol))return;
+  var volume=num(s.volumeSrc||s.volumeDst||0);
+  var price=num(s.latest||s.bestBuy||s.bestSell||0);
+  list.push({symbol:symbol,volume:finite(volume)?volume:0,price:finite(price)?price:0});
+ });
+
+ list.sort(function(a,b){return b.volume-a.volume});
+ markets=list.slice(0,MAX_MARKETS);
  $("marketCount").textContent=String(list.length);
- $("marketDetail").textContent="بازارها دریافت شدند";
- apiStatus("متصل","پاسخ API دریافت شد","green");
- log("تعداد بازارهای دریافت‌شده: "+list.length,"green");
- return list;
+ setApi("متصل","فهرست بازارها دریافت شد","green");
+ log(list.length+" بازار تومانی شناسایی شد.","green");
+ return markets;
 }
 
-async function loadMarkets(){
- if(state.busy)return;
- $("marketBtn").disabled=true;
- try{
-  await fetchMarkets();
- }catch(error){
-  apiStatus("خطا",error.message,"red");
-  log("خطای بازارها: "+error.message,"red");
- }finally{
-  $("marketBtn").disabled=false;
- }
-}
-
-async function fetchCandles(symbol){
+async function getCandles(symbol){
  var now=Math.floor(Date.now()/1000);
- var from=now-48*60*60;
+ var from=now-15*60*220;
  var url=API+"/market/udf/history?symbol="+encodeURIComponent(symbol)+
- "&resolution=60&from="+from+"&to="+now;
- var data=await request(url);
- if(!data||data.s!=="ok")throw new Error("داده کندل دریافت نشد");
+ "&resolution=15&from="+from+"&to="+now;
+ var d=await request(url);
+ if(!d||d.s!=="ok")throw new Error("داده کندل موجود نیست");
  var fields=["t","o","h","l","c","v"];
- fields.forEach(function(field){
-  if(!Array.isArray(data[field]))throw new Error("فیلد "+field+" موجود نیست");
+ fields.forEach(function(k){
+  if(!Array.isArray(d[k]))throw new Error("فیلد "+k+" نامعتبر است");
  });
- var length=data.t.length;
- if(length<30)throw new Error("تعداد کندل کم است: "+length);
- fields.forEach(function(field){
-  if(data[field].length!==length)throw new Error("طول داده‌ها متفاوت است");
+ var n=d.t.length;
+ if(n<MIN_CANDLES)throw new Error("کندل کافی نیست: "+n);
+ fields.forEach(function(k){
+  if(d[k].length!==n)throw new Error("طول داده‌ها برابر نیست");
  });
- var valid=0,previous=0;
- for(var i=0;i<length;i++){
-  var t=Number(data.t[i]),o=Number(data.o[i]);
-  var h=Number(data.h[i]),l=Number(data.l[i]);
-  var c=Number(data.c[i]),v=Number(data.v[i]);
-  if(![t,o,h,l,c,v].every(Number.isFinite))continue;
-  if(o<=0||h<=0||l<=0||c<=0)continue;
-  if(h<l||h<o||h<c||l>o||l>c)continue;
-  if(t<=previous)continue;
-  previous=t;
-  valid++;
+ var a={t:[],o:[],h:[],l:[],c:[],v:[]};
+ for(var i=0;i<n;i++){
+  var t=num(d.t[i]),o=num(d.o[i]),h=num(d.h[i]);
+  var l=num(d.l[i]),c=num(d.c[i]),v=num(d.v[i]);
+  if(![t,o,h,l,c,v].every(finite))continue;
+  if(o<=0||h<=0||l<=0||c<=0||h<l||h<o||h<c||l>o||l>c)continue;
+  a.t.push(t);a.o.push(o);a.h.push(h);a.l.push(l);a.c.push(c);a.v.push(Math.max(0,v));
  }
- if(valid<30)throw new Error("کندل معتبر کافی نیست: "+valid);
- return {count:length,valid:valid};
+ if(a.c.length<MIN_CANDLES)throw new Error("کندل معتبر کافی نیست");
+ // آخرین کندل ممکن است هنوز در حال تشکیل باشد؛ از آن صرف‌نظر می‌کنیم.
+ var last=a.t.length-1;
+ var currentTime=Math.floor(Date.now()/1000);
+ if(currentTime-a.t[last]<15*60){
+  ["t","o","h","l","c","v"].forEach(function(k){a[k].pop()});
+ }
+ if(a.c.length<MIN_CANDLES)throw new Error("کندل بسته‌شده کافی نیست");
+ return a;
 }
 
-function addResult(symbol,count,status,ok){
- var row=document.createElement("tr");
- [symbol,count,status].forEach(function(value,index){
-  var cell=document.createElement("td");
-  cell.textContent=value;
-  if(index===2)cell.className=ok?"green":"red";
-  row.appendChild(cell);
+function ema(arr,period){
+ var out=new Array(arr.length).fill(null);
+ if(arr.length<period)return out;
+ var sum=0;
+ for(var i=0;i<period;i++)sum+=arr[i];
+ var prev=sum/period;
+ out[period-1]=prev;
+ var k=2/(period+1);
+ for(var i=period;i<arr.length;i++){
+  prev=arr[i]*k+prev*(1-k);
+  out[i]=prev;
+ }
+ return out;
+}
+
+function sma(arr,period,end){
+ if(end-period+1<0)return null;
+ var s=0;
+ for(var i=end-period+1;i<=end;i++)s+=arr[i];
+ return s/period;
+}
+
+function rsi(arr,period){
+ var out=new Array(arr.length).fill(null);
+ if(arr.length<=period)return out;
+ var gain=0,loss=0;
+ for(var i=1;i<=period;i++){
+  var d=arr[i]-arr[i-1];
+  if(d>0)gain+=d;else loss-=d;
+ }
+ var ag=gain/period,al=loss/period;
+ out[period]=al===0?100:100-100/(1+ag/al);
+ for(var i=period+1;i<arr.length;i++){
+  var d=arr[i]-arr[i-1];
+  ag=(ag*(period-1)+Math.max(0,d))/period;
+  al=(al*(period-1)+Math.max(0,-d))/period;
+  out[i]=al===0?100:100-100/(1+ag/al);
+ }
+ return out;
+}
+
+function atr(a,period){
+ var tr=[];
+ for(var i=0;i<a.c.length;i++){
+  var prev=i? a.c[i-1]:a.c[i];
+  tr.push(Math.max(a.h[i]-a.l[i],Math.abs(a.h[i]-prev),Math.abs(a.l[i]-prev)));
+ }
+ var out=new Array(tr.length).fill(null);
+ var first=sma(tr,period,period-1);
+ if(first===null)return out;
+ out[period-1]=first;
+ for(var i=period;i<tr.length;i++)out[i]=(out[i-1]*(period-1)+tr[i])/period;
+ return out;
+}
+
+function highest(arr,end,period){
+ var m=-Infinity;
+ for(var i=end-period+1;i<=end;i++)m=Math.max(m,arr[i]);
+ return m;
+}
+function lowest(arr,end,period){
+ var m=Infinity;
+ for(var i=end-period+1;i<=end;i++)m=Math.min(m,arr[i]);
+ return m;
+}
+function vote(signal,reason){return {signal:signal,reason:reason}}
+
+function analyze(a){
+ var c=a.c,h=a.h,l=a.l,v=a.v,n=c.length,i=n-1;
+ var e9=ema(c,9),e21=ema(c,21),e50=ema(c,50),e200=ema(c,200);
+ var rr=rsi(c,14),macdFast=ema(c,12),macdSlow=ema(c,26);
+ var macd=c.map(function(x,j){return macdFast[j]===null||macdSlow[j]===null?null:macdFast[j]-macdSlow[j]});
+ var signalLine=ema(macd.map(function(x){return x===null?0:x}),9);
+ var std=0,mean=sma(c,20,i);
+ for(var z=i-19;z<=i;z++)std+=Math.pow(c[z]-mean,2);
+ std=Math.sqrt(std/20);
+ var upper=mean+2*std,lower=mean-2*std;
+ var vwapNumerator=0,vwapDenominator=0;
+ for(var z=Math.max(0,i-47);z<=i;z++){
+  var typical=(h[z]+l[z]+c[z])/3;
+  vwapNumerator+=typical*v[z];
+  vwapDenominator+=v[z];
+ }
+ var vwap=vwapDenominator>0?vwapNumerator/vwapDenominator:c[i];
+ var tenkan=(highest(h,i,9)+lowest(l,i,9))/2;
+ var kijun=(highest(h,i,26)+lowest(l,i,26))/2;
+ var spanA=(tenkan+kijun)/2;
+ var spanB=(highest(h,i,52)+lowest(l,i,52))/2;
+ var atrs=atr(a,14);
+ var adx=0,plusDI=0,minusDI=0;
+ var trSum=0,plusSum=0,minusSum=0;
+ for(var z=i-13;z<=i;z++){
+  var up=h[z]-h[z-1],down=l[z-1]-l[z];
+  plusSum+=up>down&&up>0?up:0;
+  minusSum+=down>up&&down>0?down:0;
+  trSum+=Math.max(h[z]-l[z],Math.abs(h[z]-c[z-1]),Math.abs(l[z]-c[z-1]));
+ }
+ if(trSum>0){
+  plusDI=100*plusSum/trSum;
+  minusDI=100*minusSum/trSum;
+  adx=100*Math.abs(plusDI-minusDI)/(plusDI+minusDI||1);
+ }
+ var stochRsi=0;
+ var rsiValues=rr.slice(Math.max(0,i-13),i+1).filter(finite);
+ if(rsiValues.length>=10){
+  var rmin=Math.min.apply(null,rsiValues),rmax=Math.max.apply(null,rsiValues);
+  stochRsi=rmax===rmin?50:100*(rr[i]-rmin)/(rmax-rmin);
+ }
+ var stAtr=atrs[i]||0;
+ var superMid=(h[i]+l[i])/2;
+ var superUpper=superMid+3*stAtr,superLower=superMid-3*stAtr;
+ var avgVol=sma(v,20,i);
+ var priorHigh=highest(h,i-1,20),priorLow=lowest(l,i-1,20);
+ var prevRsi=rr[i-5]||rr[i];
+
+ var signals=[];
+
+ // 1 EMA crossover / trend
+ signals.push(vote(
+  e9[i]>e21[i]&&e21[i]>e50[i]?1:
+  e9[i]<e21[i]&&e21[i]<e50[i]?-1:0,
+  "ترتیب EMA 9/21/50"
+ ));
+
+ // 2 RSI and simple divergence proxy
+ var bullishDiv=c[i]<c[i-5]&&rr[i]>prevRsi&&rr[i]<45;
+ var bearishDiv=c[i]>c[i-5]&&rr[i]<prevRsi&&rr[i]>55;
+ signals.push(vote(
+  rr[i]<30||bullishDiv?1:rr[i]>70||bearishDiv?-1:0,
+  "RSI="+rr[i].toFixed(1)
+ ));
+
+ // 3 MACD
+ signals.push(vote(
+  macd[i]>signalLine[i]&&macd[i]>0?1:
+  macd[i]<signalLine[i]&&macd[i]<0?-1:0,
+  "MACD و خط سیگنال"
+ ));
+
+ // 4 Bollinger mean reversion
+ signals.push(vote(
+  c[i]<lower?1:c[i]>upper?-1:0,
+  "باند بولینگر"
+ ));
+
+ // 5 VWAP
+ signals.push(vote(
+  c[i]>vwap*1.001?1:c[i]<vwap*.999?-1:0,
+  "قیمت نسبت به VWAP"
+ ));
+
+ // 6 Ichimoku
+ signals.push(vote(
+  c[i]>Math.max(spanA,spanB)&&tenkan>kijun?1:
+  c[i]<Math.min(spanA,spanB)&&tenkan<kijun?-1:0,
+  "ابر و خطوط ایچیموکو"
+ ));
+
+ // 7 ADX/DMI
+ signals.push(vote(
+  adx>20&&plusDI>minusDI?1:
+  adx>20&&minusDI>plusDI?-1:0,
+  "ADX="+adx.toFixed(1)
+ ));
+
+ // 8 Supertrend approximation
+ signals.push(vote(
+  c[i]>superUpper?1:c[i]<superLower?-1:
+  c[i]>superMid&&c[i]>c[i-1]?1:
+  c[i]<superMid&&c[i]<c[i-1]?-1:0,
+  "فیلتر ATR و روند"
+ ));
+
+ // 9 Stochastic RSI
+ signals.push(vote(
+  stochRsi<20&&rr[i]>rr[i-1]?1:
+  stochRsi>80&&rr[i]<rr[i-1]?-1:0,
+  "Stoch RSI="+stochRsi.toFixed(1)
+ ));
+
+ // 10 Volume breakout
+ var volumeOk=avgVol!==null&&v[i]>avgVol*1.5;
+ signals.push(vote(
+  volumeOk&&c[i]>priorHigh?1:
+  volumeOk&&c[i]<priorLow?-1:0,
+  volumeOk?"حجم بالا و شکست":"حجم شکست تأیید نکرد"
+ ));
+
+ var score=signals.reduce(function(s,x){return s+x.signal},0);
+ var buys=signals.filter(function(x){return x.signal===1}).length;
+ var sells=signals.filter(function(x){return x.signal===-1}).length;
+ var decision=buys>=6&&score>=6?"خرید احتمالی":
+  sells>=6&&score<=-6?"فروش احتمالی":"بدون سیگنال";
+
+ return {
+  price:c[i],score:score,buys:buys,sells:sells,
+  decision:decision,signals:signals,
+  rsi:rr[i],ema:e21[i],atr:stAtr
+ };
+}
+
+function showDetails(symbol,result){
+ selected=symbol;
+ $("selectedSymbol").textContent=symbol;
+ $("selectedScore").textContent=
+ "امتیاز: "+result.score+" از ۱۰ | موافق خرید: "+
+ result.buys+" | موافق فروش: "+result.sells;
+ $("detailResults").innerHTML="";
+ result.signals.forEach(function(s,j){
+  var tr=document.createElement("tr");
+  var vals=[names[j],s.signal===1?"مثبت":s.signal===-1?"منفی":"خنثی",s.reason];
+  vals.forEach(function(x,k){
+   var td=document.createElement("td");
+   td.textContent=x;
+   if(k===1)td.className=s.signal===1?"green":s.signal===-1?"red":"yellow";
+   tr.appendChild(td);
+  });
+  $("detailResults").appendChild(tr);
  });
- $("results").appendChild(row);
 }
 
-async function runDiagnostic(){
- if(state.busy)return;
- state.busy=true;
- state.scanned=0;
- state.valid=0;
- state.errors=0;
- $("diagnosticBtn").disabled=true;
- $("results").innerHTML="";
+function renderResults(){
+ var body=$("marketResults");
+ body.innerHTML="";
+ results.sort(function(a,b){return Math.abs(b.score)-Math.abs(a.score)});
+ results.forEach(function(r){
+  var tr=document.createElement("tr");
+  var vals=[
+   r.symbol,
+   r.price.toLocaleString("en-US",{maximumFractionDigits:4}),
+   r.score+"/10",
+   r.buys+" خرید / "+r.sells+" فروش",
+   r.decision
+  ];
+  vals.forEach(function(x,k){
+   var td=document.createElement("td");
+   td.textContent=x;
+   if(k===4)td.className=r.decision==="خرید احتمالی"?"green":r.decision==="فروش احتمالی"?"red":"yellow";
+   tr.appendChild(td);
+  });
+  tr.addEventListener("click",function(){showDetails(r.symbol,r.analysis)});
+  body.appendChild(tr);
+ });
+ var strong=results.filter(function(r){return r.decision!=="بدون سیگنال"}).length;
+ $("strongCount").textContent=String(strong);
+ if(results.length)showDetails(results[0].symbol,results[0].analysis);
+}
+
+async function startScan(){
+ if(busy)return;
+ busy=true;
+ stopRequested=false;
+ results=[];
+ $("marketResults").innerHTML="";
  $("scannedCount").textContent="۰";
- $("validCount").textContent="۰";
- $("finalStatus").textContent="در حال بررسی";
+ $("strongCount").textContent="۰";
+ $("scanBtn").disabled=true;
+ $("finalStatus").textContent="در حال تحلیل";
  $("finalStatus").className="value yellow";
- $("finalDetail").textContent="در حال آزمایش API و کندل‌ها";
- progress(5,"شروع عیب‌یابی");
- log("شروع عیب‌یابی مستقل");
-
+ log("شروع موتور تحلیل ۱۵ دقیقه‌ای.");
  try{
-  apiStatus("در حال اتصال","درخواست ارسال شد","yellow");
-  await fetchMarkets();
-  progress(20,"بررسی کندل‌ها");
-
-  for(var i=0;i<SYMBOLS.length;i++){
-   var symbol=SYMBOLS[i];
+  if(!markets.length)await getMarkets();
+  var total=markets.length;
+  if(!total)throw new Error("بازاری برای تحلیل موجود نیست");
+  for(var i=0;i<total;i++){
+   if(stopRequested){log("درخواست توقف دریافت شد.","yellow");break}
+   var item=markets[i];
+   progress(i/total*100,"تحلیل "+(i+1)+" از "+total+": "+item.symbol);
    try{
-    log("بررسی "+symbol);
-    var result=await fetchCandles(symbol);
-    state.valid++;
-    addResult(symbol,String(result.valid),"معتبر",true);
-    log(symbol+": "+result.valid+" کندل معتبر","green");
+    var candles=await getCandles(item.symbol);
+    var analysis=analyze(candles);
+    results.push({
+     symbol:item.symbol,
+     price:analysis.price,
+     score:analysis.score,
+     buys:analysis.buys,
+     sells:analysis.sells,
+     decision:analysis.decision,
+     analysis:analysis
+    });
+    log(item.symbol+" تحلیل شد: "+analysis.decision);
    }catch(error){
-    state.errors++;
-    addResult(symbol,"-",error.message,false);
-    log(symbol+": "+error.message,"red");
+    log(item.symbol+": "+error.message,"red");
    }
-
-   state.scanned++;
-   $("scannedCount").textContent=String(state.scanned);
-   $("validCount").textContent=String(state.valid);
-   progress(20+state.scanned/SYMBOLS.length*80,
-    "بررسی "+state.scanned+" از "+SYMBOLS.length);
+   $("scannedCount").textContent=String(i+1);
+   renderResults();
+   await sleep(250);
   }
-
-  if(state.valid===SYMBOLS.length){
-   $("finalStatus").textContent="عیب‌یابی موفق";
-   $("finalStatus").className="value green";
-   $("finalDetail").textContent="هر ۵ بازار دارای کندل معتبر هستند.";
-   log("تمام آزمایش‌ها موفق بودند.","green");
-  }else if(state.valid>0){
-   $("finalStatus").textContent="نیازمند بررسی";
-   $("finalStatus").className="value yellow";
-   $("finalDetail").textContent=state.valid+" بازار از ۵ بازار معتبر بودند.";
-  }else{
-   $("finalStatus").textContent="عیب‌یابی ناموفق";
-   $("finalStatus").className="value red";
-   $("finalDetail").textContent="هیچ بازار معتبری دریافت نشد.";
-  }
-  progress(100,"عیب‌یابی پایان یافت");
-
+  progress(100,stopRequested?"تحلیل متوقف شد":"تحلیل پایان یافت");
+  $("finalStatus").textContent=results.length?"تحلیل تکمیل شد":"بدون نتیجه";
+  $("finalStatus").className="value "+(results.length?"green":"red");
+  $("finalDetail").textContent=results.length+
+   " بازار تحلیل شد. این نتایج سیگنال‌های آزمایشی‌اند و تضمین سود نیستند.";
+  log("پایان تحلیل؛ هیچ سفارشی ثبت نشده است.","green");
  }catch(error){
-  $("finalStatus").textContent="خطای ارتباط";
+  $("finalStatus").textContent="خطا";
   $("finalStatus").className="value red";
   $("finalDetail").textContent=error.message;
-  apiStatus("خطا",error.message,"red");
-  log("خطای اصلی: "+error.message,"red");
-  progress(100,"توقف با خطا");
+  log("خطای موتور: "+error.message,"red");
  }finally{
-  state.busy=false;
-  $("diagnosticBtn").disabled=false;
-  log("پایان عیب‌یابی؛ هیچ معامله‌ای انجام نشد.");
+  busy=false;
+  $("scanBtn").disabled=false;
  }
 }
 
-window.addEventListener("error",function(event){
- log("خطای JavaScript: "+(event.message||"نامشخص"),"red");
-});
-window.addEventListener("unhandledrejection",function(event){
- var reason=event.reason&&event.reason.message?event.reason.message:String(event.reason);
- log("خطای Promise: "+reason,"red");
-});
-
-function initialize(){
- $("diagnosticBtn").addEventListener("click",runDiagnostic);
- $("marketBtn").addEventListener("click",loadMarkets);
- $("clearBtn").addEventListener("click",function(){
-  if(state.busy)return;
-  $("logs").innerHTML="";
-  $("results").innerHTML="<tr><td colspan='3'>گزارش پاک شد</td></tr>";
-  log("گزارش‌ها پاک شدند.");
- });
- log("دکمه‌ها فعال شدند.","green");
- log("سیستم فقط خواندنی است.");
- loadMarkets();
+async function refreshMarkets(){
+ if(busy)return;
+ try{await getMarkets()}
+ catch(e){setApi("خطا",e.message,"red");log(e.message,"red")}
 }
 
-if(document.readyState==="loading"){
- document.addEventListener("DOMContentLoaded",initialize);
-}else{
- initialize();
-}
+$("scanBtn").addEventListener("click",startScan);
+$("marketBtn").addEventListener("click",refreshMarkets);
+$("stopBtn").addEventListener("click",function(){
+ if(busy){stopRequested=true;log("درخواست توقف ارسال شد.","yellow")}
+});
+renderStrategies();
+log("V7 آماده است. فقط تایم‌فریم ۱۵ دقیقه.");
+refreshMarkets();
+
 })();
 </script>
 </body>

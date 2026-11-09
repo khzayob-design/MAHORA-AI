@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -109,6 +108,7 @@ footer{text-align:center;color:var(--muted);padding:18px;font-size:11px}
  <div class="progress"><div id="scanProgress"></div></div>
  <p class="notice" id="scanInfo">در انتظار اتصال</p>
  <p class="notice" id="errorInfo"></p>
+ <p class="notice" id="priceInfo">به‌روزرسانی قیمت معاملات باز: در انتظار شروع</p>
 </div>
 
 <div class="panel">
@@ -178,6 +178,7 @@ const CFG={
  timeout:12000,
  marketRefresh:300000,
  retryDelay:15000,
+ priceRefresh:5000,
  candleResolution:"15",
  candleSeconds:900
 };
@@ -187,10 +188,22 @@ const fmt=(n,d=0)=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:d}
 const safe=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 
 let state={
- running:false,scanning:false,markets:[],eligible:[],
- positions:[],history:[],lastSignals:{},prices:{},
- balance:CAPITAL,scanned:0,lastMarketRefresh:0,
- timer:null,failures:0
+ running:false,
+ scanning:false,
+ priceRefreshing:false,
+ markets:[],
+ eligible:[],
+ positions:[],
+ history:[],
+ lastSignals:{},
+ prices:{},
+ balance:CAPITAL,
+ scanned:0,
+ lastMarketRefresh:0,
+ timer:null,
+ priceTimer:null,
+ failures:0,
+ priceFailures:0
 };
 
 function log(message){
@@ -199,50 +212,84 @@ function log(message){
  $("log").prepend(line);
  while($("log").children.length>60)$("log").lastChild.remove();
 }
+
 function error(message){
  $("errorInfo").textContent="خطا: "+message;
  log("خطا: "+message);
 }
-function clearError(){$("errorInfo").textContent="";}
+
+function clearError(){
+ $("errorInfo").textContent="";
+}
 
 function saveState(){
  try{
   localStorage.setItem("mahora_paper_v10",JSON.stringify({
-   balance:state.balance,positions:state.positions,
-   history:state.history,lastSignals:state.lastSignals
+   balance:state.balance,
+   positions:state.positions,
+   history:state.history,
+   lastSignals:state.lastSignals
   }));
- }catch(e){log("ذخیره اطلاعات ناموفق بود.");}
+ }catch(e){
+  log("ذخیره اطلاعات ناموفق بود.");
+ }
 }
+
 function loadState(){
  try{
   const x=JSON.parse(localStorage.getItem("mahora_paper_v10")||"null");
   if(!x)return;
+
   state.balance=Number(x.balance);
   state.positions=Array.isArray(x.positions)?x.positions:[];
   state.history=Array.isArray(x.history)?x.history:[];
   state.lastSignals=x.lastSignals||{};
-  if(!Number.isFinite(state.balance)||state.balance<0)state.balance=CAPITAL;
- }catch(e){log("اطلاعات ذخیره‌شده قابل خواندن نیست.");}
+
+  if(!Number.isFinite(state.balance)||state.balance<0)
+   state.balance=CAPITAL;
+
+ }catch(e){
+  log("اطلاعات ذخیره‌شده قابل خواندن نیست.");
+ }
 }
 
 async function getJSON(url){
  const controller=new AbortController();
  const timeout=setTimeout(()=>controller.abort(),CFG.timeout);
+
  try{
-  const r=await fetch(url,{headers:{Accept:"application/json"},signal:controller.signal,cache:"no-store"});
+  const r=await fetch(url,{
+   headers:{Accept:"application/json"},
+   signal:controller.signal,
+   cache:"no-store"
+  });
+
   if(!r.ok)throw new Error("HTTP "+r.status);
   return await r.json();
+
  }catch(e){
   if(e.name==="AbortError")throw new Error("مهلت اتصال تمام شد");
   throw e;
- }finally{clearTimeout(timeout);}
+ }finally{
+  clearTimeout(timeout);
+ }
+}
+
+function marketPriceFromStats(stats,symbol){
+ const base=String(symbol).replace(/IRT$/i,"").toLowerCase();
+ const item=stats[base+"-rls"];
+ if(!item||!(Number(item.latest)>0))return null;
+ return Number(item.latest)/10;
 }
 
 async function discoverMarkets(){
  try{
   $("apiStatus").textContent="در حال اتصال";
+
   const data=await getJSON(API+"/market/stats?dstCurrency=rls");
-  if(data.status!=="ok"||!data.stats)throw new Error("پاسخ نامعتبر API");
+
+  if(data.status!=="ok"||!data.stats)
+   throw new Error("پاسخ نامعتبر API");
 
   state.markets=Object.entries(data.stats)
    .filter(([k,v])=>/^[a-z0-9]+-rls$/i.test(k)&&v&&Number(v.latest)>0)
@@ -263,9 +310,11 @@ async function discoverMarkets(){
   $("eligibleCount").textContent=state.eligible.length;
 
   renderMarket();
-  log("بازارهای شناسایی‌شده: "+state.markets.length);
   clearError();
+
+  log("بازارهای شناسایی‌شده: "+state.markets.length);
   return state.eligible.length>0;
+
  }catch(e){
   $("apiStatus").textContent="خطا";
   $("apiStatus").className="red";
@@ -274,32 +323,44 @@ async function discoverMarkets(){
  }
 }
 
-/* واحد قیمت کندل با قیمت آماری بازار تطبیق داده می‌شود.
-   اگر هیچ‌کدام از دو مقیاس با قیمت بازار جور نباشد، بازار رد می‌شود. */
+/* دریافت کندل‌های بسته‌شده ۱۵ دقیقه‌ای */
 async function fetchCandles(market){
  const now=Math.floor(Date.now()/1000);
- const url=API+"/market/udf/history?symbol="+encodeURIComponent(market.symbol)+
-  "&resolution=15&countback=150&to="+now;
+
+ const url=API+"/market/udf/history?symbol="+
+  encodeURIComponent(market.symbol)+
+  "&resolution="+CFG.candleResolution+
+  "&countback=150&to="+now;
+
  const d=await getJSON(url);
+
  if(d.s!=="ok"||!Array.isArray(d.c)||!Array.isArray(d.t))
   throw new Error(d.errmsg||"کندل موجود نیست");
 
  const raw=Number(d.c[d.c.length-1]);
  if(!(raw>0))throw new Error("قیمت کندل نامعتبر است");
 
- const candidates=[1,0.1];
  let scale=null;
- for(const factor of candidates){
-  const p=raw*factor;
-  const ratio=p/market.latest;
-  if(ratio>0.85&&ratio<1.15){scale=factor;break;}
+
+ for(const factor of [1,0.1]){
+  const ratio=(raw*factor)/market.latest;
+  if(ratio>0.85&&ratio<1.15){
+   scale=factor;
+   break;
+  }
  }
- if(scale===null)throw new Error("اختلاف واحد قیمت؛ بازار ایمن نیست");
+
+ if(scale===null)
+  throw new Error("اختلاف واحد قیمت؛ بازار ایمن نیست");
 
  const rows=[];
+
  for(let i=0;i<d.c.length;i++){
   const t=Number(d.t[i]);
-  if(!Number.isFinite(t)||t+CFG.candleSeconds>now)continue;
+
+  if(!Number.isFinite(t)||t+CFG.candleSeconds>now)
+   continue;
+
   const row={
    t,
    o:Number(d.o?.[i])*scale,
@@ -308,70 +369,113 @@ async function fetchCandles(market){
    c:Number(d.c[i])*scale,
    v:Number(d.v?.[i]||0)
   };
+
   if([row.o,row.h,row.l,row.c].every(Number.isFinite)&&
-     row.o>0&&row.h>0&&row.l>0&&row.c>0)rows.push(row);
+     row.o>0&&row.h>0&&row.l>0&&row.c>0)
+   rows.push(row);
  }
- if(rows.length<40)throw new Error("کندل بسته‌شده کافی نیست");
+
+ if(rows.length<40)
+  throw new Error("کندل بسته‌شده کافی نیست");
+
  return rows;
 }
 
 function ema(a,p){
  if(a.length<p)return null;
  let x=a[0],k=2/(p+1);
- for(let i=1;i<a.length;i++)x=a[i]*k+x*(1-k);
+ for(let i=1;i<a.length;i++)
+  x=a[i]*k+x*(1-k);
  return x;
 }
+
 function sma(a,p){
  if(a.length<p)return null;
  return a.slice(-p).reduce((s,x)=>s+x,0)/p;
 }
+
 function rsi(a,p=14){
  if(a.length<p+1)return 50;
+
  let up=0,down=0;
+
  for(let i=a.length-p;i<a.length;i++){
   const d=a[i]-a[i-1];
-  if(d>0)up+=d;else down-=d;
+  if(d>0)up+=d;
+  else down-=d;
  }
+
  if(down===0)return 100;
  return 100-100/(1+up/down);
 }
+
 function stddev(a,p=20){
  const m=sma(a,p);
  if(m===null)return 0;
- return Math.sqrt(a.slice(-p).reduce((s,x)=>s+(x-m)**2,0)/p);
+
+ return Math.sqrt(
+  a.slice(-p).reduce((s,x)=>s+(x-m)**2,0)/p
+ );
 }
+
 function vwap(c){
  let pv=0,vol=0;
+
  for(const x of c.slice(-20)){
   const v=x.v>0?x.v:1;
-  pv+=((x.h+x.l+x.c)/3)*v;vol+=v;
+  pv+=((x.h+x.l+x.c)/3)*v;
+  vol+=v;
  }
+
  return vol?pv/vol:0;
 }
+
 function adxApprox(c){
- const a=c.slice(-15);let plus=0,minus=0;
+ const a=c.slice(-15);
+ let plus=0,minus=0;
+
  for(let i=1;i<a.length;i++){
-  const up=a[i].h-a[i-1].h,down=a[i-1].l-a[i].l;
+  const up=a[i].h-a[i-1].h;
+  const down=a[i-1].l-a[i].l;
+
   if(up>down&&up>0)plus+=up;
   if(down>up&&down>0)minus+=down;
  }
+
  const sum=plus+minus;
  return sum?Math.abs(plus-minus)/sum*100:0;
 }
+
 function stochastic(c){
  const a=c.slice(-14);
- const hi=Math.max(...a.map(x=>x.h)),lo=Math.min(...a.map(x=>x.l));
- return hi===lo?50:(a[a.length-1].c-lo)/(hi-lo)*100;
+ const hi=Math.max(...a.map(x=>x.h));
+ const lo=Math.min(...a.map(x=>x.l));
+
+ return hi===lo?50:
+  (a[a.length-1].c-lo)/(hi-lo)*100;
 }
 
 function analyze(c){
- const close=c.map(x=>x.c),last=c[c.length-1];
- const fast=ema(close.slice(-80),9),slow=ema(close.slice(-100),21);
- const r=rsi(close),mac=ema(close.slice(-60),12)-ema(close.slice(-60),26);
- const mid=sma(close,20),sd=stddev(close,20),upper=mid+2*sd;
- const vw=vwap(c),adx=adxApprox(c);
+ const close=c.map(x=>x.c);
+ const last=c[c.length-1];
+
+ const fast=ema(close.slice(-80),9);
+ const slow=ema(close.slice(-100),21);
+ const r=rsi(close);
+
+ const mac=ema(close.slice(-60),12)-
+  ema(close.slice(-60),26);
+
+ const mid=sma(close,20);
+ const sd=stddev(close,20);
+ const upper=mid+2*sd;
+
+ const vw=vwap(c);
+ const adx=adxApprox(c);
+
  const prior=c.slice(-21,-1);
  const priorHigh=Math.max(...prior.map(x=>x.h));
+
  const avgVol=sma(c.map(x=>x.v),20)||0;
  const support=Math.min(...c.slice(-30).map(x=>x.l));
  const resistance=Math.max(...c.slice(-30).map(x=>x.h));
@@ -389,21 +493,42 @@ function analyze(c){
   st>50&&st<85,
   last.c>support*1.01&&last.c<resistance*1.005
  ];
+
  const score=votes.filter(Boolean).length;
- return {score,signal:score>=CFG.minVotes?"BUY":"WAIT",price:last.c,high:last.h,low:last.l};
+
+ return {
+  score,
+  signal:score>=CFG.minVotes?"BUY":"WAIT",
+  price:last.c
+ };
+}
+
+/* سود و زیان تخمینی با احتساب هزینه خروج */
+function estimateNetPnl(p){
+ const exit=p.current*(1-CFG.slippage/100);
+ const proceeds=exit*p.quantity;
+ const exitFee=proceeds*CFG.fee/100;
+
+ return proceeds-exitFee-(p.entry*p.quantity)-p.entryFee;
 }
 
 function exposure(){
  return state.positions.reduce((s,p)=>s+p.quantity*p.entry,0);
 }
+
 function dailyPnl(){
  const today=new Date().toDateString();
- const realized=state.history.filter(x=>new Date(x.time).toDateString()===today)
+
+ const realized=state.history
+  .filter(x=>new Date(x.time).toDateString()===today)
   .reduce((s,x)=>s+x.pnl,0);
- const floating=state.positions.reduce((s,p)=>s+
-  (p.current-p.entry)*p.quantity-p.entryFee,0);
+
+ const floating=state.positions
+  .reduce((s,p)=>s+estimateNetPnl(p),0);
+
  return realized+floating;
 }
+
 function dailyLossReached(){
  return dailyPnl()<=-CAPITAL*CFG.dailyLoss/100;
 }
@@ -414,23 +539,32 @@ function openPosition(market,price,score){
  if(dailyLossReached())return;
 
  const used=exposure();
- if(used+TRADE_AMOUNT>CAPITAL*CFG.maxExposure/100)return;
+
+ if(used+TRADE_AMOUNT>CAPITAL*CFG.maxExposure/100)
+  return;
 
  const entry=price*(1+CFG.slippage/100);
  const quantity=TRADE_AMOUNT/entry;
  const entryFee=TRADE_AMOUNT*CFG.fee/100;
  const totalCost=TRADE_AMOUNT+entryFee;
+
  if(totalCost>state.balance)return;
 
  state.balance-=totalCost;
+
  state.positions.push({
   id:Date.now()+"_"+Math.random(),
   symbol:market.symbol,
-  entry,current:price,quantity,
+  entry,
+  current:price,
+  quantity,
   stopLoss:entry*(1-CFG.stopLoss/100),
   takeProfit:entry*(1+CFG.takeProfit/100),
-  entryFee,openedAt:Date.now(),score
+  entryFee,
+  openedAt:Date.now(),
+  score
  });
+
  saveState();
  log("ورود آزمایشی "+market.symbol+" | "+score+"/10");
  renderAll();
@@ -439,110 +573,237 @@ function openPosition(market,price,score){
 function closePosition(p,price,reason){
  const idx=state.positions.findIndex(x=>x.id===p.id);
  if(idx<0)return;
+
  const exit=price*(1-CFG.slippage/100);
  const proceeds=exit*p.quantity;
  const exitFee=proceeds*CFG.fee/100;
  const net=proceeds-exitFee-(p.entry*p.quantity)-p.entryFee;
 
  state.balance+=proceeds-exitFee;
+
  state.history.unshift({
-  symbol:p.symbol,entry:p.entry,exit,pnl:net,
-  reason,time:Date.now()
+  symbol:p.symbol,
+  entry:p.entry,
+  exit,
+  pnl:net,
+  reason,
+  time:Date.now()
  });
+
  state.history=state.history.slice(0,500);
  state.positions.splice(idx,1);
+
  saveState();
  log("خروج "+p.symbol+" | "+reason+" | "+fmt(net)+" تومان");
  renderAll();
 }
 
+/* فقط سیگنال ورود از کندل گرفته می‌شود.
+   مدیریت معاملات باز با قیمت زنده انجام می‌شود. */
 async function scanMarket(market){
  const candles=await fetchCandles(market);
  const result=analyze(candles);
  const symbol=market.symbol;
+
  const previous=state.lastSignals[symbol]||"WAIT";
+
  state.lastSignals[symbol]=result.signal;
  state.prices[symbol]=result.price;
 
  const p=state.positions.find(x=>x.symbol===symbol);
- if(p){
-  p.current=result.price;
-  const last=candles[candles.length-1];
-  if(last.low<=p.stopLoss){
-   closePosition(p,p.stopLoss,"حد ضرر ۲٪");
-  }else if(last.high>=p.takeProfit){
-   closePosition(p,p.takeProfit,"حد سود ۴٪");
-  }
- }else if(result.signal==="BUY"&&previous!=="BUY"){
+
+ if(!p&&result.signal==="BUY"&&previous!=="BUY"){
   openPosition(market,result.price,result.score);
  }
 }
 
-function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function sleep(ms){
+ return new Promise(r=>setTimeout(r,ms));
+}
+
+/* به‌روزرسانی مستقل قیمت معاملات باز از API آمار نوبیتکس */
+async function refreshOpenPrices(){
+ if(state.priceRefreshing)return;
+
+ state.priceRefreshing=true;
+
+ try{
+  const data=await getJSON(API+"/market/stats?dstCurrency=rls");
+
+  if(data.status!=="ok"||!data.stats)
+   throw new Error("دریافت قیمت ناموفق بود");
+
+  const stats=data.stats;
+  const positions=[...state.positions];
+
+  for(const p of positions){
+   const price=marketPriceFromStats(stats,p.symbol);
+
+   if(!(price>0))continue;
+
+   p.current=price;
+   state.prices[p.symbol]=price;
+
+   if(price<=p.stopLoss){
+    closePosition(p,price,"حد ضرر ۲٪");
+   }else if(price>=p.takeProfit){
+    closePosition(p,price,"حد سود ۴٪");
+   }
+  }
+
+  for(const m of state.markets){
+   const price=marketPriceFromStats(stats,m.symbol);
+   if(price>0)m.latest=price;
+  }
+
+  state.priceFailures=0;
+
+  $("priceInfo").textContent=
+   "آخرین به‌روزرسانی قیمت: "+
+   new Date().toLocaleTimeString("fa-IR")+
+   " | بازه به‌روزرسانی: ۵ ثانیه";
+
+  saveState();
+  renderPositions();
+  updateDashboard();
+
+ }catch(e){
+  state.priceFailures++;
+
+  $("priceInfo").textContent=
+   "خطای دریافت قیمت زنده: "+e.message;
+
+  if(state.priceFailures===1||state.priceFailures%5===0)
+   log("خطای به‌روزرسانی قیمت: "+e.message);
+
+ }finally{
+  state.priceRefreshing=false;
+ }
+}
+
+function priceLoop(){
+ if(!state.running)return;
+
+ if(state.priceTimer)
+  clearTimeout(state.priceTimer);
+
+ state.priceTimer=setTimeout(async()=>{
+  if(state.running){
+   await refreshOpenPrices();
+   priceLoop();
+  }
+ },CFG.priceRefresh);
+}
 
 async function runScan(){
  if(!state.running||state.scanning)return;
+
  state.scanning=true;
+
  let completed=0,failures=0;
+
  try{
-  if(!state.eligible.length||Date.now()-state.lastMarketRefresh>CFG.marketRefresh){
-   if(!await discoverMarkets())throw new Error("بازارهای نوبیتکس در دسترس نیستند");
+  if(!state.eligible.length||
+     Date.now()-state.lastMarketRefresh>CFG.marketRefresh){
+
+   if(!await discoverMarkets())
+    throw new Error("بازارهای نوبیتکس در دسترس نیستند");
   }
+
   if(dailyLossReached()){
-   $("riskInfo").textContent="سقف زیان روزانه فعال است؛ ورود جدید متوقف شد.";
+   $("riskInfo").textContent=
+    "سقف زیان روزانه فعال است؛ ورود جدید متوقف شد.";
+
    log("محدودیت زیان روزانه فعال شد.");
    return;
   }
 
   const total=state.eligible.length;
+
   $("scanInfo").textContent="اسکن بازارها در حال انجام است.";
   $("scanProgress").style.width="0%";
 
   for(let i=0;i<total;i++){
    if(!state.running)break;
+
    const market=state.eligible[i];
+
    try{
     await scanMarket(market);
     completed++;
    }catch(e){
     failures++;
-    if(failures<=8)log(market.symbol+": "+e.message);
+    if(failures<=8)
+     log(market.symbol+": "+e.message);
    }
+
    $("scannedCount").textContent=completed;
-   $("scanProgress").style.width=((i+1)/total*100).toFixed(1)+"%";
-   $("scanInfo").textContent="بازار "+(i+1)+" از "+total+
+
+   $("scanProgress").style.width=
+    ((i+1)/total*100).toFixed(1)+"%";
+
+   $("scanInfo").textContent=
+    "بازار "+(i+1)+" از "+total+
     " | موفق: "+completed+" | خطا: "+failures;
-   if(i<total-1)await sleep(CFG.requestDelay);
+
+   if(i<total-1)
+    await sleep(CFG.requestDelay);
   }
+
   state.scanned=completed;
   state.failures=failures;
-  $("scanInfo").textContent="پایان اسکن | موفق: "+completed+" | خطا: "+failures;
-  if(failures) $("errorInfo").textContent="تعداد خطاهای این دور: "+failures;
-  else clearError();
+
+  $("scanInfo").textContent=
+   "پایان اسکن | موفق: "+completed+" | خطا: "+failures;
+
+  if(failures)
+   $("errorInfo").textContent=
+    "تعداد خطاهای این دور: "+failures;
+  else
+   clearError();
+
   saveState();
   renderAll();
- }catch(e){error(e.message);}
- finally{state.scanning=false;}
+
+ }catch(e){
+  error(e.message);
+ }finally{
+  state.scanning=false;
+ }
 }
 
 async function autoLoop(){
  if(!state.running||state.scanning)return;
- try{await runScan();}
- finally{
-  if(state.running)state.timer=setTimeout(autoLoop,CFG.retryDelay);
+
+ try{
+  await runScan();
+ }finally{
+  if(state.running)
+   state.timer=setTimeout(autoLoop,CFG.retryDelay);
  }
 }
+
 function startSystem(){
  if(state.running)return;
+
  state.running=true;
+
  updateStatus();
  log("سیستم Paper Trading شروع شد.");
+
  autoLoop();
+ priceLoop();
 }
+
 function stopSystem(){
  state.running=false;
+
  if(state.timer)clearTimeout(state.timer);
+ if(state.priceTimer)clearTimeout(state.priceTimer);
+
  state.timer=null;
+ state.priceTimer=null;
+
  updateStatus();
  log("سیستم متوقف شد.");
 }
@@ -550,91 +811,147 @@ function stopSystem(){
 function renderMarket(){
  $("marketTable").innerHTML=state.markets.slice(0,150).map(m=>`
  <tr>
-  <td>${safe(m.symbol)}</td><td>${fmt(m.latest,2)}</td>
+  <td>${safe(m.symbol)}</td>
+  <td>${fmt(m.latest,2)}</td>
   <td class="${m.change>=0?"green":"red"}">${fmt(m.change,2)}%</td>
   <td><span class="status ${m.closed?"off":"on"}">${m.closed?"بسته":"فعال"}</span></td>
  </tr>`).join("");
 }
+
 function renderPositions(){
  $("positionsTable").innerHTML=state.positions.map(p=>{
-  const pnl=(p.current-p.entry)*p.quantity-p.entryFee;
+  const pnl=estimateNetPnl(p);
+
   return `<tr>
-   <td>${safe(p.symbol)}</td><td>${fmt(p.entry,2)}</td>
-   <td>${fmt(p.current,2)}</td><td class="red">${fmt(p.stopLoss,2)}</td>
+   <td>${safe(p.symbol)}</td>
+   <td>${fmt(p.entry,2)}</td>
+   <td>${fmt(p.current,2)}</td>
+   <td class="red">${fmt(p.stopLoss,2)}</td>
    <td class="green">${fmt(p.takeProfit,2)}</td>
    <td class="${pnl>=0?"green":"red"}">${fmt(pnl,2)}</td>
   </tr>`;
  }).join("");
 }
+
 function renderHistory(){
  $("historyTable").innerHTML=state.history.slice(0,100).map(h=>`
  <tr>
-  <td>${safe(h.symbol)}</td><td>${fmt(h.entry,2)}</td>
+  <td>${safe(h.symbol)}</td>
+  <td>${fmt(h.entry,2)}</td>
   <td>${fmt(h.exit,2)}</td>
   <td class="${h.pnl>=0?"green":"red"}">${fmt(h.pnl,2)}</td>
   <td>${safe(h.reason)}</td>
   <td>${new Date(h.time).toLocaleString("fa-IR")}</td>
  </tr>`).join("");
 }
+
 function updateDashboard(){
- const openValue=state.positions.reduce((s,p)=>s+p.quantity*p.current,0);
- const closed=state.history.reduce((s,h)=>s+h.pnl,0);
- const floating=state.positions.reduce((s,p)=>s+
-  (p.current-p.entry)*p.quantity-p.entryFee,0);
+ const openValue=state.positions.reduce(
+  (s,p)=>s+p.quantity*p.current,0
+ );
+
+ const closed=state.history.reduce(
+  (s,h)=>s+h.pnl,0
+ );
+
+ const floating=state.positions.reduce(
+  (s,p)=>s+estimateNetPnl(p),0
+ );
+
  const total=closed+floating;
+
  $("balance").textContent=fmt(state.balance);
  $("openValue").textContent=fmt(openValue);
  $("totalPnl").textContent=fmt(total);
  $("totalPnl").className=total>=0?"green":"red";
- $("tradeCount").textContent=state.history.length+state.positions.length;
+
+ $("tradeCount").textContent=
+  state.history.length+state.positions.length;
+
  $("riskInfo").textContent=dailyLossReached()
   ?"سقف زیان روزانه فعال است؛ ورود جدید متوقف شده است."
   :"زیان امروز: "+fmt(Math.max(0,-dailyPnl()))+" تومان";
 }
+
 function updateStatus(){
- $("systemStatus").textContent=state.running?"سیستم روشن":"سیستم خاموش";
- $("systemStatus").className=state.running?"status on":"status off";
- $("engineStatus").textContent=state.running?"فعال":"آماده";
- $("engineStatus").className=state.running?"status on":"status off";
+ $("systemStatus").textContent=
+  state.running?"سیستم روشن":"سیستم خاموش";
+
+ $("systemStatus").className=
+  state.running?"status on":"status off";
+
+ $("engineStatus").textContent=
+  state.running?"فعال":"آماده";
+
+ $("engineStatus").className=
+  state.running?"status on":"status off";
+
  $("startBtn").disabled=state.running;
 }
+
 function renderAll(){
- renderMarket();renderPositions();renderHistory();
- updateDashboard();updateStatus();
+ renderMarket();
+ renderPositions();
+ renderHistory();
+ updateDashboard();
+ updateStatus();
 }
 
 function resetPaper(){
- if(state.running){alert("ابتدا سیستم را متوقف کن.");return;}
- if(!confirm("تمام معاملات و تاریخچه حساب آزمایشی پاک شود؟"))return;
+ if(state.running){
+  alert("ابتدا سیستم را متوقف کن.");
+  return;
+ }
+
+ if(!confirm("تمام معاملات و تاریخچه حساب آزمایشی پاک شود؟"))
+  return;
+
  state.balance=CAPITAL;
  state.positions=[];
  state.history=[];
  state.lastSignals={};
  state.prices={};
+
  saveState();
  renderAll();
+
  log("حساب آزمایشی بازنشانی شد.");
 }
 
 document.addEventListener("visibilitychange",()=>{
- if(document.visibilityState==="visible"&&state.running&&!state.scanning){
-  if(state.timer)clearTimeout(state.timer);
-  state.timer=null;
+ if(document.visibilityState==="visible"&&state.running){
   log("صفحه دوباره فعال شد.");
-  autoLoop();
+
+  if(state.timer)
+   clearTimeout(state.timer);
+
+  state.timer=null;
+
+  if(!state.scanning)
+   autoLoop();
+
+  if(state.priceTimer)
+   clearTimeout(state.priceTimer);
+
+  state.priceTimer=null;
+  priceLoop();
  }
 });
 
 async function init(){
  loadState();
  renderAll();
+
  log("MAHORA AI آماده است.");
  log("موتور واحد: MAHORA 15M");
  log("سرمایه آزمایشی: ۱۰ میلیون تومان");
+ log("قیمت معاملات باز: به‌روزرسانی هر ۵ ثانیه");
  log("معامله واقعی غیرفعال است.");
+
  await discoverMarkets();
 }
+
 init();
 </script>
 </body>
-</html>
+ </html>

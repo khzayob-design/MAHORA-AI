@@ -9,318 +9,631 @@
 <style>
 :root{
 --bg:#080d19;--panel:#111a2b;--gold:#e9bb55;
---muted:#9ba8bb;--green:#12d58b;--red:#ff5263;
---line:#26344b;
+--muted:#9ba8bb;--green:#12d58b;--red:#ff5263;--line:#26344b;
 }
 *{box-sizing:border-box}
 body{
 margin:0;background:radial-gradient(ellipse at top,#14213a,#080d19 65%);
-color:#f5f7fb;font-family:Tahoma,Arial,sans-serif;
+color:#f5f7fb;font-family:Tahoma,Arial,sans-serif
 }
-.app{max-width:480px;margin:auto;padding:18px 15px 35px}
-.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.app{max-width:520px;margin:auto;padding:18px 15px 35px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:8px}
 .brand{display:flex;align-items:center;gap:10px}
-.logo{width:44px;height:44px;border:1px solid #987333;
-border-radius:14px;display:grid;place-items:center;color:var(--gold);font-size:22px}
+.logo{width:44px;height:44px;border:1px solid #987333;border-radius:14px;display:grid;place-items:center;color:var(--gold);font-size:22px}
 .brand b{color:var(--gold);font-size:18px}
 .brand small{display:block;color:var(--muted);font-size:10px;margin-top:5px}
-.pill{border:1px solid #12694f;color:var(--green);background:#08271f;
-padding:8px 10px;border-radius:30px;font-size:10px}
-.card{background:linear-gradient(145deg,#152137,#0d1524);
-border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px}
+.pill{border:1px solid #12694f;color:var(--green);background:#08271f;padding:8px 10px;border-radius:30px;font-size:10px;white-space:nowrap}
+.card{background:linear-gradient(145deg,#152137,#0d1524);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:13px}
 h1{font-size:22px;margin:12px 0}
 h2{font-size:15px;margin:0 0 13px}
+h3{font-size:13px;margin:0;color:var(--gold)}
 .sub{font-size:11px;color:var(--muted);line-height:1.9}
 .center{text-align:center}
-.robot{font-size:48px;margin:12px}
+.robot{font-size:43px;margin:10px}
 .metrics{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.metric{background:#09111f;border:1px solid #202e45;
-border-radius:13px;padding:13px;min-width:0}
+.metric{background:#09111f;border:1px solid #202e45;border-radius:13px;padding:13px;min-width:0}
 .metric small{display:block;color:var(--muted);font-size:10px;margin-bottom:9px}
 .metric strong{font-size:14px;color:var(--gold);overflow-wrap:anywhere}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.switch{width:46px;height:26px;border:0;border-radius:20px;
-background:#43516a;position:relative;cursor:pointer;flex-shrink:0}
-.switch:after{content:"";position:absolute;width:20px;height:20px;
-top:3px;right:3px;background:white;border-radius:50%;transition:.2s}
+.switch{width:46px;height:26px;border:0;border-radius:20px;background:#43516a;position:relative;cursor:pointer;flex-shrink:0}
+.switch:after{content:"";position:absolute;width:20px;height:20px;top:3px;right:3px;background:white;border-radius:50%;transition:.2s}
 .switch.on{background:#0c9c6a}
 .switch.on:after{right:23px}
-.engine{background:#09111f;border:1px solid var(--line);
-border-radius:15px;padding:14px;margin-bottom:10px}
+.engine{background:#09111f;border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:10px}
 .engine.active{border-color:var(--green)}
-.engine h3{color:var(--gold);font-size:14px;margin:0 0 9px}
 .engine-info{font-size:10px;color:var(--muted);line-height:2}
-.btn{width:100%;border:0;border-radius:13px;padding:13px;
-font-weight:bold;font-size:13px;cursor:pointer;margin-top:10px;
-background:linear-gradient(90deg,#f1ce77,#c89435);color:#17120a}
+.btn{width:100%;border:0;border-radius:13px;padding:13px;font-weight:bold;font-size:13px;cursor:pointer;margin-top:10px;background:linear-gradient(90deg,#f1ce77,#c89435);color:#17120a}
 .secondary{background:#17243a;color:white;border:1px solid #344560}
-.danger{background:transparent;color:var(--red);border:1px solid #a52d42}
-.field{width:100%;padding:12px;border-radius:11px;
-border:1px solid var(--line);background:#080f1c;color:white;
-margin:7px 0;font:inherit}
+.danger{background:transparent;color:var(--red);border:1px solid #a52d42;padding:7px 10px;border-radius:9px;cursor:pointer;font-size:10px}
+.field{width:100%;padding:12px;border-radius:11px;border:1px solid var(--line);background:#080f1c;color:white;margin:7px 0;font:inherit}
 .nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:15px}
-.nav button{background:transparent;border:1px solid var(--line);
-border-radius:12px;padding:12px 3px;color:var(--muted);font-size:11px}
+.nav button{background:transparent;border:1px solid var(--line);border-radius:12px;padding:12px 3px;color:var(--muted);font-size:11px}
 .nav button.active{color:var(--gold);border-color:#987333}
-.notice{font-size:10px;line-height:2;color:#d5b978;
-background:#241e12;border:1px solid #65502a;
-border-radius:12px;padding:11px;margin-top:13px}
+.notice{font-size:10px;line-height:2;color:#d5b978;background:#241e12;border:1px solid #65502a;border-radius:12px;padding:11px;margin-top:13px}
 .hidden{display:none!important}
 .green{color:var(--green)!important}
 .red{color:var(--red)!important}
-.trade-item{border-bottom:1px solid var(--line);padding:12px 0;font-size:11px;line-height:2}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:10px;min-width:390px}
+td,th{padding:10px 7px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:normal}
+.empty{text-align:center;color:var(--muted);padding:18px}
+.asset{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:8px;font-size:11px}
+.asset:last-child{border:0}
+.price{color:var(--gold);font-weight:bold}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-left:5px}
+.bad-dot{background:var(--red)}
 .foot{text-align:center;color:#64738a;font-size:10px;margin:20px}
+.small-btn{border:1px solid var(--line);background:#17243a;color:#fff;border-radius:8px;padding:7px 9px;font-size:10px}
 </style>
 </head>
 <body>
 <main class="app">
 
 <header class="top">
-<div class="brand">
-<div class="logo">M</div>
-<div><b>MAHORA AI</b><small>SMART TRADING ASSISTANT</small></div>
-</div>
-<span class="pill">● نسخه آزمایشی</span>
+ <div class="brand">
+  <div class="logo">M</div>
+  <div><b>MAHORA AI</b><small>SMART TRADING ASSISTANT</small></div>
+ </div>
+ <span class="pill">● PAPER TRADING</span>
 </header>
 
 <section id="home">
+ <div class="card center">
+  <div class="sub">وضعیت سیستم</div>
+  <div class="robot">🤖</div>
+  <h1 id="botStatus">آماده شروع</h1>
+  <div class="sub" id="lastUpdate">هنوز قیمت بازار دریافت نشده است</div>
+ </div>
 
-<div class="card center">
-<div class="sub">وضعیت سیستم</div>
-<div class="robot">🤖</div>
-<h1 id="botStatus">آماده شروع معاملات</h1>
-<div class="sub">سه موتور معاملاتی مستقل</div>
-</div>
+ <div class="metrics">
+  <div class="metric"><small>موجودی نقدی</small><strong id="balance">۱٬۰۰۰٬۰۰۰ ریال</strong></div>
+  <div class="metric"><small>ارزش کل حساب</small><strong id="equity">۱٬۰۰۰٬۰۰۰ ریال</strong></div>
+  <div class="metric"><small>سود و زیان کل</small><strong id="totalPnl">۰ ریال</strong></div>
+  <div class="metric"><small>معاملات بسته‌شده</small><strong id="tradeCount">۰</strong></div>
+ </div>
 
-<div class="metrics">
-<div class="metric">
-<small>موجودی آزمایشی</small>
-<strong id="balance">۱٬۰۰۰٬۰۰۰ ریال</strong>
-</div>
-<div class="metric">
-<small>سود و زیان کل</small>
-<strong id="totalPnl">۰ ریال</strong>
-</div>
-<div class="metric">
-<small>تعداد معاملات</small>
-<strong id="tradeCount">۰</strong>
-</div>
-<div class="metric">
-<small>موتورهای فعال</small>
-<strong id="engineCount">۰ از ۳</strong>
-</div>
-</div>
+ <div class="card" style="margin-top:13px">
+  <div class="row">
+   <h2>قیمت بازار</h2>
+   <button class="small-btn" onclick="refreshMarket()">به‌روزرسانی</button>
+  </div>
+  <div id="marketList" class="sub">در حال دریافت قیمت‌ها...</div>
+  <div class="sub" style="margin-top:9px">قیمت‌ها به ریال نمایش داده می‌شوند. نرخ دلار از منبع عمومی دریافت می‌شود و ممکن است با نرخ بازار آزاد ایران متفاوت باشد.</div>
+ </div>
 
-<div class="card" style="margin-top:13px">
-<h2>موتورهای معاملاتی</h2>
+ <div class="card">
+  <h2>موتورهای معاملاتی</h2>
 
-<div class="engine" id="e1">
-<div class="row">
-<h3>⚡ Scalping</h3>
-<button class="switch" id="s1" onclick="toggleEngine(0)"></button>
-</div>
-<div class="engine-info">معاملات سریع · بررسی فرصت‌های کوتاه‌مدت</div>
-<div class="engine-info">وضعیت: <span id="st1">خاموش</span></div>
-</div>
+  <div class="engine" id="engine0">
+   <div class="row"><h3>⚡ Scalping</h3><button class="switch" id="switch0" onclick="toggleEngine(0)"></button></div>
+   <div class="engine-info">استراتژی کوتاه‌مدت · میانگین متحرک سریع و کند</div>
+   <div class="engine-info">وضعیت: <span id="engineStatus0">خاموش</span></div>
+  </div>
 
-<div class="engine" id="e2">
-<div class="row">
-<h3>📊 Day Trading</h3>
-<button class="switch" id="s2" onclick="toggleEngine(1)"></button>
-</div>
-<div class="engine-info">معاملات روزانه · بررسی روند همان روز</div>
-<div class="engine-info">وضعیت: <span id="st2">خاموش</span></div>
-</div>
+  <div class="engine" id="engine1">
+   <div class="row"><h3>📊 Day Trading</h3><button class="switch" id="switch1" onclick="toggleEngine(1)"></button></div>
+   <div class="engine-info">استراتژی میان‌روزی · بررسی روند و میانگین‌ها</div>
+   <div class="engine-info">وضعیت: <span id="engineStatus1">خاموش</span></div>
+  </div>
 
-<div class="engine" id="e3">
-<div class="row">
-<h3>📈 Swing Trading</h3>
-<button class="switch" id="s3" onclick="toggleEngine(2)"></button>
-</div>
-<div class="engine-info">معاملات نوسانی · بررسی روند میان‌مدت</div>
-<div class="engine-info">وضعیت: <span id="st3">خاموش</span></div>
-</div>
+  <div class="engine" id="engine2">
+   <div class="row"><h3>📈 Swing Trading</h3><button class="switch" id="switch2" onclick="toggleEngine(2)"></button></div>
+   <div class="engine-info">استراتژی نوسانی · بررسی روند بلندتر</div>
+   <div class="engine-info">وضعیت: <span id="engineStatus2">خاموش</span></div>
+  </div>
 
-<button class="btn" onclick="startPaper()">شروع معاملات آزمایشی</button>
-<button class="btn secondary" onclick="stopAll()">خاموش کردن همه موتورها</button>
-</div>
+  <button class="btn" onclick="startPaper()">شروع معاملات آزمایشی</button>
+  <button class="btn secondary" onclick="stopAll()">توقف همه موتورها</button>
+ </div>
 
-<div class="card">
-<h2>آخرین وضعیت</h2>
-<div class="sub" id="status">برای شروع، حداقل یک موتور را روشن کن.</div>
-<button class="btn secondary" onclick="demoTrade()">ثبت معامله آزمایشی</button>
-</div>
+ <div class="card">
+  <h2>معاملات باز</h2>
+  <div class="table-wrap">
+   <table>
+    <thead><tr><th>موتور</th><th>دارایی</th><th>قیمت ورود</th><th>سود/زیان</th><th>عملیات</th></tr></thead>
+    <tbody id="openRows"><tr><td colspan="5" class="empty">معامله بازی وجود ندارد</td></tr></tbody>
+   </table>
+  </div>
+ </div>
 
-<div class="card">
-<h2>معاملات باز</h2>
-<div id="openTrades" class="sub">معامله بازی وجود ندارد.</div>
-</div>
-
+ <div class="card">
+  <h2>گزارش سیستم</h2>
+  <div class="sub" id="systemLog">برای شروع، موتور موردنظر را روشن کن.</div>
+ </div>
 </section>
 
 <section id="history" class="hidden">
-<div class="card">
-<h2>تاریخچه معاملات</h2>
-<div id="historyList" class="sub">هنوز معامله‌ای ثبت نشده است.</div>
-</div>
+ <div class="card">
+  <h2>تاریخچه معاملات</h2>
+  <div class="table-wrap">
+   <table>
+    <thead><tr><th>زمان</th><th>موتور</th><th>دارایی</th><th>ورود</th><th>خروج</th><th>سود خالص</th></tr></thead>
+    <tbody id="historyRows"><tr><td colspan="6" class="empty">تاریخچه خالی است</td></tr></tbody>
+   </table>
+  </div>
+  <button class="btn danger" onclick="clearHistory()">پاک کردن تاریخچه</button>
+ </div>
 </section>
 
 <section id="settings" class="hidden">
-<div class="card">
-<h2>تنظیمات مدیریت ریسک</h2>
-<label class="sub">ریسک هر معامله (درصد)</label>
-<input id="risk" class="field" type="number" value="1" min="0.1" max="2" step="0.1">
-<label class="sub">کارمزد فرضی هر سمت معامله (درصد)</label>
-<input id="fee" class="field" type="number" value="0.1" min="0" max="2" step="0.01">
-<button class="btn" onclick="saveSettings()">ذخیره تنظیمات</button>
-</div>
-<div class="card">
-<h2>اتصال صرافی</h2>
-<div class="row"><b>آبان‌تتر</b><span class="pill">متصل نشده</span></div>
-<p class="sub">اتصال واقعی هنوز پیاده‌سازی نشده است. هیچ کلید API در این نسخه دریافت نمی‌شود.</p>
-</div>
-<div class="card">
-<h2>مشخصات حساب</h2>
-<div class="sub">موجودی اولیه: ۱٬۰۰۰٬۰۰۰ ریال</div>
-<div class="sub">نوع حساب: Paper Trading</div>
-<div class="sub">برداشت وجه: غیرفعال</div>
-</div>
+ <div class="card">
+  <h2>تنظیمات مدیریت ریسک</h2>
+  <label class="sub">ریسک هر معامله (درصد ارزش حساب)</label>
+  <input id="risk" class="field" type="number" min="0.1" max="10" step="0.1" value="1">
+  <label class="sub">کارمزد هر سمت معامله (درصد)</label>
+  <input id="fee" class="field" type="number" min="0" max="2" step="0.01" value="0.1">
+  <label class="sub">لغزش قیمت هر سمت معامله (درصد)</label>
+  <input id="slippage" class="field" type="number" min="0" max="2" step="0.01" value="0.05">
+  <label class="sub">حد ضرر (درصد)</label>
+  <input id="stopLoss" class="field" type="number" min="0.1" max="20" step="0.1" value="1.5">
+  <label class="sub">حد سود (درصد)</label>
+  <input id="takeProfit" class="field" type="number" min="0.1" max="50" step="0.1" value="3">
+  <button class="btn" onclick="saveSettings()">ذخیره تنظیمات</button>
+ </div>
+
+ <div class="card">
+  <h2>اتصال صرافی</h2>
+  <div class="row"><b>آبان‌تتر</b><span class="pill">متصل نشده</span></div>
+  <p class="sub">اتصال به صرافی در این نسخه فعال نیست. هیچ کلید API دریافت نمی‌شود و هیچ سفارش واقعی ارسال نمی‌شود.</p>
+ </div>
+
+ <div class="card">
+  <h2>مشخصات حساب</h2>
+  <div class="sub">موجودی اولیه: ۱٬۰۰۰٬۰۰۰ ریال</div>
+  <div class="sub">نوع حساب: Paper Trading</div>
+  <div class="sub">ذخیره اطلاعات: حافظه مرورگر</div>
+  <div class="sub">برداشت وجه: غیرفعال</div>
+  <button class="btn danger" onclick="resetAccount()">بازنشانی کامل حساب</button>
+ </div>
 </section>
 
 <nav class="nav">
-<button class="active" onclick="tab('home',this)">⌂ خانه</button>
-<button onclick="tab('history',this)">◷ تاریخچه</button>
-<button onclick="tab('settings',this)">⚙ تنظیمات</button>
+ <button class="active" onclick="tab('home',this)">⌂ خانه</button>
+ <button onclick="tab('history',this)">◷ تاریخچه</button>
+ <button onclick="tab('settings',this)">⚙ تنظیمات</button>
 </nav>
 
 <div class="notice">
-این نسخه فقط شبیه‌ساز است. قیمت‌ها و معاملات واقعی دریافت نمی‌شوند.
-هیچ سفارش واقعی ارسال نمی‌شود و سود و زیان نمایشی است.
+این برنامه فقط شبیه‌ساز معاملات است. سیگنال‌ها بر اساس نمونه قیمت‌های دریافتی و میانگین متحرک ساخته می‌شوند. داده‌های گذشته یا نتایج آزمایشی، تضمین‌کننده سود آینده نیستند. تا پایان دوره آزمایش، از اتصال معاملات واقعی خودداری کن.
 </div>
 <div class="foot">MAHORA AI · PAPER TRADING</div>
 </main>
 
 <script>
-const initialBalance=1000000;
-let balance=initialBalance;
-let engines=[false,false,false];
-let trades=[];
-let totalPnl=0;
-let risk=1,fee=0.1;
-let running=false;
+"use strict";
 
-const names=["Scalping","Day Trading","Swing Trading"];
+const INITIAL_BALANCE=1000000;
+const STORAGE_KEY="MAHORA_AI_PAPER_V2";
 
-function format(n){
-return Math.round(n).toLocaleString("fa-IR")+" ریال";
+const ASSETS={
+ BTC:{name:"بیت‌کوین",symbol:"BTC",type:"crypto"},
+ ETH:{name:"اتریوم",symbol:"ETH",type:"crypto"},
+ XRP:{name:"ریپل",symbol:"XRP",type:"crypto"},
+ XAU:{name:"طلای جهانی",symbol:"XAU",type:"gold"},
+ USD:{name:"دلار",symbol:"USD",type:"usd"}
+};
+
+const ENGINES=[
+ {name:"Scalping",short:3,long:8},
+ {name:"Day Trading",short:5,long:15},
+ {name:"Swing Trading",short:8,long:25}
+];
+
+let state={
+ cash:INITIAL_BALANCE,
+ realized:0,
+ engines:[false,false,false],
+ running:false,
+ positions:{},
+ history:[],
+ settings:{risk:1,fee:0.1,slippage:0.05,stopLoss:1.5,takeProfit:3}
+};
+
+let prices={};
+let priceHistory={BTC:[],ETH:[],XRP:[],XAU:[],USD:[]};
+let usdRate=null;
+let marketBusy=false;
+let lastMarketTime=null;
+
+const $=id=>document.getElementById(id);
+
+function number(n){
+ return Number(n).toLocaleString("fa-IR",{maximumFractionDigits:0});
+}
+function money(n){
+ if(!Number.isFinite(n))return "—";
+ return number(n)+" ریال";
+}
+function signed(n){
+ return (n>=0?"+":"−")+money(Math.abs(n));
+}
+function safe(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+function save(){
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+ catch(e){console.warn("ذخیره‌سازی انجام نشد",e);}
+}
+function load(){
+ try{
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw)return;
+  const data=JSON.parse(raw);
+  if(!data||typeof data!=="object")return;
+  state={...state,...data};
+  state.settings={...state.settings,...(data.settings||{})};
+  state.engines=Array.isArray(data.engines)?data.engines:[false,false,false];
+  state.positions=data.positions||{};
+  state.history=Array.isArray(data.history)?data.history:[];
+ }catch(e){console.warn("بازیابی اطلاعات ناموفق بود",e);}
+}
+function equity(){
+ let value=state.cash;
+ Object.values(state.positions).forEach(p=>{
+  const current=prices[p.asset];
+  if(current)value+=p.qty*current;
+  else value+=p.qty*p.entry;
+ });
+ return value;
+}
+function openPnl(p){
+ const current=prices[p.asset];
+ if(!current)return 0;
+ const exitPrice=current*(1-state.settings.slippage/100);
+ const exitFee=p.qty*exitPrice*state.settings.fee/100;
+ return p.qty*exitPrice-exitFee-p.cost-p.entryFee;
+}
+
+async function fetchJSON(url){
+ const response=await fetch(url,{cache:"no-store"});
+ if(!response.ok)throw new Error("HTTP "+response.status);
+ return response.json();
+}
+
+async function fetchCrypto(){
+ const symbols={BTC:"BTCUSDT",ETH:"ETHUSDT",XRP:"XRPUSDT"};
+ const result={};
+ await Promise.all(Object.entries(symbols).map(async ([key,symbol])=>{
+  try{
+   const d=await fetchJSON("https://api.binance.com/api/v3/ticker/price?symbol="+symbol);
+   const n=Number(d.price);
+   if(n>0)result[key]=n;
+  }catch(e){}
+ }));
+ if(Object.keys(result).length<3){
+  try{
+   const d=await fetchJSON("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,ripple&vs_currencies=usd");
+   if(!result.BTC&&d.bitcoin?.usd)result.BTC=Number(d.bitcoin.usd);
+   if(!result.ETH&&d.ethereum?.usd)result.ETH=Number(d.ethereum.usd);
+   if(!result.XRP&&d.ripple?.usd)result.XRP=Number(d.ripple.usd);
+  }catch(e){}
+ }
+ return result;
+}
+
+async function fetchDollar(){
+ const d=await fetchJSON("https://open.er-api.com/v6/latest/USD");
+ const rate=Number(d?.rates?.IRR);
+ if(d?.result!=="success"||!(rate>0))throw new Error("نرخ دلار دریافت نشد");
+ return rate;
+}
+
+async function fetchGold(){
+ const d=await fetchJSON("https://api.gold-api.com/price/XAU");
+ const p=Number(d?.price);
+ if(!(p>0))throw new Error("قیمت طلا دریافت نشد");
+ return p;
+}
+
+async function refreshMarket(){
+ if(marketBusy)return;
+ marketBusy=true;
+ $("lastUpdate").textContent="در حال دریافت قیمت بازار...";
+ try{
+  const [crypto,dollar,gold]=await Promise.allSettled([
+   fetchCrypto(),fetchDollar(),fetchGold()
+  ]);
+
+  if(dollar.status==="fulfilled")usdRate=dollar.value;
+
+  if(usdRate){
+   if(crypto.status==="fulfilled"){
+    Object.entries(crypto.value).forEach(([k,v])=>prices[k]=v*usdRate);
+   }
+   if(gold.status==="fulfilled")prices.XAU=gold.value*usdRate;
+   if(!prices.USD)prices.USD=usdRate;
+   else prices.USD=usdRate;
+  }else{
+   if(crypto.status==="fulfilled"){
+    Object.entries(crypto.value).forEach(([k,v])=>prices[k]=v);
+   }
+   delete prices.XAU;
+   delete prices.USD;
+  }
+
+  const now=Date.now();
+  Object.keys(ASSETS).forEach(k=>{
+   if(prices[k]>0){
+    priceHistory[k].push({time:now,price:prices[k]});
+    if(priceHistory[k].length>200)priceHistory[k].shift();
+   }
+  });
+
+  lastMarketTime=now;
+  processEngines();
+  renderAll();
+
+  const available=Object.keys(prices).filter(k=>prices[k]>0).length;
+  $("lastUpdate").textContent=available+" از ۵ دارایی دریافت شد · "+new Date(now).toLocaleTimeString("fa-IR");
+  if(available===0)$("systemLog").textContent="دریافت قیمت ناموفق بود؛ اتصال اینترنت یا سرویس قیمت را بررسی کن.";
+ }catch(e){
+  $("lastUpdate").textContent="خطا در دریافت قیمت بازار";
+  $("systemLog").textContent="قیمت قابل اتکا دریافت نشد؛ هیچ معامله‌ای انجام نشد.";
+ }finally{
+  marketBusy=false;
+ }
+}
+
+function average(values){
+ if(!values.length)return null;
+ return values.reduce((a,b)=>a+b,0)/values.length;
+}
+
+function signalFor(engineIndex,asset){
+ const config=ENGINES[engineIndex];
+ const samples=priceHistory[asset].map(x=>x.price);
+ if(samples.length<config.long)return "WAIT";
+ const fast=average(samples.slice(-config.short));
+ const slow=average(samples.slice(-config.long));
+ if(fast>slow*1.0002)return "BUY";
+ if(fast<slow*0.9998)return "SELL";
+ return "WAIT";
+}
+
+function openPosition(engineIndex,asset){
+ const price=prices[asset];
+ if(!(price>0))return;
+
+ const key=engineIndex+"_"+asset;
+ if(state.positions[key])return;
+
+ const stake=equity()*state.settings.risk/100;
+ const entry=price*(1+state.settings.slippage/100);
+ const fee=state.settings.fee/100;
+ const qty=stake/entry;
+ const entryFee=stake*fee;
+ const total=stake+entryFee;
+
+ if(!(qty>0)||total>state.cash)return;
+
+ state.cash-=total;
+ state.positions[key]={
+  key,engine:engineIndex,asset,
+  entry,qty,cost:stake,entryFee,
+  time:Date.now()
+ };
+ save();
+}
+
+function closePosition(key,reason="خروج سیگنال"){
+ const p=state.positions[key];
+ if(!p)return;
+ const market=prices[p.asset];
+ if(!(market>0)){
+  alert("قیمت فعلی این دارایی در دسترس نیست.");
+  return;
+ }
+
+ const exit=market*(1-state.settings.slippage/100);
+ const gross=p.qty*exit;
+ const exitFee=gross*state.settings.fee/100;
+ const net=gross-exitFee-p.cost-p.entryFee;
+
+ state.cash+=gross-exitFee;
+ state.realized+=net;
+
+ state.history.unshift({
+  time:Date.now(),
+  engine:ENGINES[p.engine].name,
+  asset:p.asset,
+  entry:p.entry,
+  exit,
+  net,
+  reason
+ });
+ if(state.history.length>500)state.history.length=500;
+
+ delete state.positions[key];
+ save();
+ renderAll();
+}
+
+function processEngines(){
+ if(!state.running)return;
+
+ for(let i=0;i<ENGINES.length;i++){
+  if(!state.engines[i])continue;
+
+  Object.keys(ASSETS).forEach(asset=>{
+   if(!(prices[asset]>0))return;
+
+   const key=i+"_"+asset;
+   const position=state.positions[key];
+   const signal=signalFor(i,asset);
+
+   if(position){
+    const pnlPercent=((prices[asset]-position.entry)/position.entry)*100;
+    if(pnlPercent<=-state.settings.stopLoss){
+     closePosition(key,"حد ضرر");
+    }else if(pnlPercent>=state.settings.takeProfit){
+     closePosition(key,"حد سود");
+    }else if(signal==="SELL"){
+     closePosition(key,"سیگنال خروج");
+    }
+   }else if(signal==="BUY"){
+    openPosition(i,asset);
+   }
+  });
+ }
+ save();
 }
 
 function toggleEngine(i){
-engines[i]=!engines[i];
-update();
-}
-
-function update(){
-let count=engines.filter(Boolean).length;
-document.getElementById("engineCount").textContent=count+" از ۳";
-document.getElementById("botStatus").textContent=count?"موتورها آماده‌اند":"آماده شروع معاملات";
-engines.forEach((v,i)=>{
-document.getElementById("s"+(i+1)).classList.toggle("on",v);
-document.getElementById("e"+(i+1)).classList.toggle("active",v);
-document.getElementById("st"+(i+1)).textContent=v?"روشن":"خاموش";
-});
-document.getElementById("balance").textContent=format(balance);
-document.getElementById("totalPnl").textContent=format(totalPnl);
-document.getElementById("totalPnl").className=totalPnl>=0?"green":"red";
-document.getElementById("tradeCount").textContent=trades.length.toLocaleString("fa-IR");
+ state.engines[i]=!state.engines[i];
+ if(!state.engines.some(Boolean))state.running=false;
+ save();
+ renderAll();
 }
 
 function startPaper(){
-if(!engines.some(Boolean)){
-alert("ابتدا حداقل یک موتور را روشن کن.");
-return;
-}
-running=true;
-document.getElementById("status").textContent="سیستم شبیه‌سازی فعال است. برای ثبت معامله آزمایشی از دکمه مربوط استفاده کن.";
+ if(!state.engines.some(Boolean)){
+  alert("ابتدا حداقل یک موتور را روشن کن.");
+  return;
+ }
+ state.running=true;
+ save();
+ $("systemLog").textContent="معاملات آزمایشی فعال شد. موتور‌ها منتظر تشکیل سیگنال معتبر هستند.";
+ renderAll();
+ refreshMarket();
 }
 
 function stopAll(){
-engines=[false,false,false];
-running=false;
-update();
-document.getElementById("status").textContent="تمام موتورها خاموش شدند.";
+ state.engines=[false,false,false];
+ state.running=false;
+ save();
+ $("systemLog").textContent="تمام موتورهای معاملاتی متوقف شدند. معاملات باز همچنان در حساب باقی می‌مانند.";
+ renderAll();
 }
 
-function demoTrade(){
-if(!running){
-alert("ابتدا یک موتور را روشن کن و شروع معاملات را بزن.");
-return;
-}
-let i=engines.findIndex(Boolean);
-if(i<0)return;
-
-let amount=Math.floor(balance*risk/100);
-let cost=amount*fee/100;
-let pnl=Math.floor(amount*0.02)-cost*2;
-
-if(amount<=0||balance<amount){
-alert("موجودی کافی نیست.");
-return;
+function renderMarket(){
+ const list=$("marketList");
+ list.innerHTML=Object.entries(ASSETS).map(([key,a])=>{
+  const p=prices[key];
+  return `<div class="asset">
+   <span>${a.name} (${a.symbol})</span>
+   <span class="price">${p>0?money(p):"ناموجود"}</span>
+  </div>`;
+ }).join("");
 }
 
-balance-=cost*2;
-balance+=pnl+cost*2;
-totalPnl+=pnl;
-
-let t={
-name:names[i],
-amount:amount,
-pnl:pnl,
-date:new Date().toLocaleString("fa-IR")
-};
-trades.unshift(t);
-document.getElementById("status").textContent="یک معامله فرضی توسط "+names[i]+" ثبت شد. این معامله سود واقعی نیست.";
-renderTrades();
-update();
+function renderEngines(){
+ state.engines.forEach((active,i)=>{
+  $("switch"+i).classList.toggle("on",active);
+  $("engine"+i).classList.toggle("active",active);
+  $("engineStatus"+i).textContent=active?"روشن":"خاموش";
+ });
+ $("botStatus").textContent=state.running?"موتورها در حال بررسی بازار":"آماده شروع معاملات";
 }
 
-function renderTrades(){
-let open=document.getElementById("openTrades");
-let history=document.getElementById("historyList");
-
-if(!trades.length){
-open.textContent="معامله بازی وجود ندارد.";
-history.textContent="هنوز معامله‌ای ثبت نشده است.";
-return;
+function renderOpen(){
+ const rows=Object.entries(state.positions).map(([key,p])=>{
+  const pnl=openPnl(p);
+  return `<tr>
+   <td>${ENGINES[p.engine].name}</td>
+   <td>${ASSETS[p.asset].symbol}</td>
+   <td>${money(p.entry)}</td>
+   <td class="${pnl>=0?"green":"red"}">${signed(pnl)}</td>
+   <td><button class="danger" onclick="closePosition('${key}','خروج دستی')">بستن</button></td>
+  </tr>`;
+ });
+ $("openRows").innerHTML=rows.length?rows.join(""):'<tr><td colspan="5" class="empty">معامله بازی وجود ندارد</td></tr>';
 }
 
-open.innerHTML="آخرین معاملات آزمایشی:";
-history.innerHTML=trades.map(t=>
-'<div class="trade-item"><b>'+t.name+'</b><br>حجم: '+format(t.amount)+'<br>سود/زیان فرضی: '+format(t.pnl)+'<br>'+t.date+'</div>'
-).join("");
+function renderHistory(){
+ const rows=state.history.map(t=>`<tr>
+  <td>${new Date(t.time).toLocaleString("fa-IR")}</td>
+  <td>${safe(t.engine)}</td>
+  <td>${safe(ASSETS[t.asset]?.symbol||t.asset)}</td>
+  <td>${money(t.entry)}</td>
+  <td>${money(t.exit)}</td>
+  <td class="${t.net>=0?"green":"red"}">${signed(t.net)}</td>
+ </tr>`);
+ $("historyRows").innerHTML=rows.length?rows.join(""):'<tr><td colspan="6" class="empty">تاریخچه خالی است</td></tr>';
+}
+
+function renderAll(){
+ renderEngines();
+ renderMarket();
+ renderOpen();
+ renderHistory();
+
+ $("balance").textContent=money(state.cash);
+ $("equity").textContent=money(equity());
+
+ const floating=Object.entries(state.positions).reduce((sum,[key,p])=>sum+openPnl(p),0);
+ const total=state.realized+floating;
+ $("totalPnl").textContent=signed(total);
+ $("totalPnl").className=total>=0?"green":"red";
+ $("tradeCount").textContent=number(state.history.length);
+
+ if($("risk"))$("risk").value=state.settings.risk;
+ if($("fee"))$("fee").value=state.settings.fee;
+ if($("slippage"))$("slippage").value=state.settings.slippage;
+ if($("stopLoss"))$("stopLoss").value=state.settings.stopLoss;
+ if($("takeProfit"))$("takeProfit").value=state.settings.takeProfit;
 }
 
 function saveSettings(){
-let r=Number(document.getElementById("risk").value);
-let f=Number(document.getElementById("fee").value);
-if(r<0.1||r>2||f<0||f>2){
-alert("مقادیر ریسک یا کارمزد نامعتبر است.");
-return;
-}
-risk=r;
-fee=f;
-alert("تنظیمات ذخیره شد.");
+ const risk=Number($("risk").value);
+ const fee=Number($("fee").value);
+ const slippage=Number($("slippage").value);
+ const stopLoss=Number($("stopLoss").value);
+ const takeProfit=Number($("takeProfit").value);
+
+ if(!Number.isFinite(risk)||risk<0.1||risk>10||
+ !Number.isFinite(fee)||fee<0||fee>2||
+ !Number.isFinite(slippage)||slippage<0||slippage>2||
+ !Number.isFinite(stopLoss)||stopLoss<0.1||stopLoss>20||
+ !Number.isFinite(takeProfit)||takeProfit<0.1||takeProfit>50){
+  alert("یکی از مقادیر تنظیمات خارج از محدوده مجاز است.");
+  return;
+ }
+
+ state.settings={risk,fee,slippage,stopLoss,takeProfit};
+ save();
+ renderAll();
+ alert("تنظیمات ذخیره شد.");
 }
 
-function tab(id,btn){
-["home","history","settings"].forEach(x=>
-document.getElementById(x).classList.toggle("hidden",x!==id)
-);
-document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
-btn.classList.add("active");
+function clearHistory(){
+ if(!confirm("تاریخچه معاملات بسته‌شده پاک شود؟"))return;
+ state.history=[];
+ save();
+ renderAll();
 }
 
-update();
+function resetAccount(){
+ if(!confirm("تمام اطلاعات حساب، معاملات و تنظیمات پاک و حساب از نو ساخته شود؟"))return;
+ state={
+  cash:INITIAL_BALANCE,
+  realized:0,
+  engines:[false,false,false],
+  running:false,
+  positions:{},
+  history:[],
+  settings:{risk:1,fee:0.1,slippage:0.05,stopLoss:1.5,takeProfit:3}
+ };
+ priceHistory={BTC:[],ETH:[],XRP:[],XAU:[],USD:[]};
+ save();
+ renderAll();
+ $("systemLog").textContent="حساب آزمایشی بازنشانی شد.";
+}
+
+function tab(id,button){
+ ["home","history","settings"].forEach(x=>{
+  $(x).classList.toggle("hidden",x!==id);
+ });
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ button.classList.add("active");
+}
+
+load();
+renderAll();
+refreshMarket();
+setInterval(refreshMarket,30000);
 </script>
 </body>
 </html>

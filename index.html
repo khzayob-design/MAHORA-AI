@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080d19">
-<title>MAHORA AI V12</title>
+<title>MAHORA AI V13</title>
 <style>
 :root{--bg:#080d19;--panel:#111a2b;--panel2:#17243a;--border:#263650;--text:#edf3ff;--muted:#93a4bd;--green:#19c784;--red:#ff596b;--yellow:#f5bd4f;--blue:#55a8ff}
 *{box-sizing:border-box}
@@ -19,7 +19,7 @@ h1{font-size:25px;margin:0 0 8px}
 .full{grid-column:1/-1}
 .label{font-size:12px;color:var(--muted);margin-bottom:9px}
 .value{font-size:19px;font-weight:bold;overflow-wrap:anywhere}
-.small{margin-top:7px;line-height:1.8}
+.small{margin-top:7px;line-height:1.9}
 .green{color:var(--green)}.red{color:var(--red)}.yellow{color:var(--yellow)}.blue{color:var(--blue)}
 button{width:100%;padding:14px;border:0;border-radius:10px;cursor:pointer;margin-top:9px;font:bold 14px Tahoma}
 button:disabled{opacity:.5;cursor:not-allowed}
@@ -43,16 +43,15 @@ footer{text-align:center;color:var(--muted);font-size:11px;padding:20px}
 </head>
 <body>
 <div class="container">
-
 <header>
 <h1>MAHORA AI</h1>
-<div class="subtitle">نسخه V12 | ۱۰ استراتژی | تایم‌فریم ۱۵ دقیقه</div>
+<div class="subtitle">نسخه V13 | ۱۰ استراتژی | تایم‌فریم ۱۵ دقیقه</div>
 </header>
 
 <div class="notice">
 <strong>حالت امن و فقط تحلیل فعال است</strong><br>
-دریافت اطلاعات عمومی و کندل‌های بسته‌شده؛ بدون ثبت سفارش، خرید یا فروش.
-Paper Trading غیرفعال است. هیچ اتصال معاملاتی در این نسخه وجود ندارد.
+فقط دریافت اطلاعات عمومی و تحلیل کندل‌های بسته‌شده.
+هیچ سفارش، خرید، فروش، اتصال معاملاتی یا Paper Trading در این نسخه وجود ندارد.
 </div>
 
 <div class="grid">
@@ -64,13 +63,19 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 </div>
 
 <div class="card">
-<div class="label">فهرست بازارها</div>
+<div class="label">API فهرست بازارها</div>
 <div class="value yellow" id="apiStatus">بررسی نشده</div>
 <div class="small" id="apiDetail">منتظر دریافت اطلاعات</div>
 </div>
 
 <div class="card">
-<div class="label">تایم‌فریم اصلی</div>
+<div class="label">API کندل‌ها</div>
+<div class="value yellow" id="candleApiStatus">بررسی نشده</div>
+<div class="small" id="candleApiDetail">اتصال کندل‌ها جداگانه بررسی می‌شود.</div>
+</div>
+
+<div class="card">
+<div class="label">تایم‌فریم</div>
 <div class="value blue">۱۵ دقیقه</div>
 <div class="small">فقط کندل بسته‌شده</div>
 </div>
@@ -78,17 +83,25 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 <div class="card">
 <div class="label">بازارهای شناسایی‌شده</div>
 <div class="value" id="marketCount">۰</div>
-<div class="small">بازارهای ریالی قابل بررسی</div>
+<div class="small">بازارهای ریالی شناسایی‌شده</div>
 </div>
 
 <div class="card">
-<div class="label">تحلیل‌های موفق</div>
+<div class="label">تحلیل‌های جدید</div>
 <div class="value" id="scannedCount">۰</div>
+<div class="small">تحلیل کندل‌های جدید</div>
 </div>
 
 <div class="card">
 <div class="label">سیگنال‌های قوی</div>
 <div class="value" id="strongCount">۰</div>
+<div class="small">بر اساس آستانه تعریف‌شده</div>
+</div>
+
+<div class="card">
+<div class="label">بازارهای دارای خطا</div>
+<div class="value" id="errorCount">۰</div>
+<div class="small">خطاهای مستقل هر بازار</div>
 </div>
 
 <div class="card full">
@@ -112,9 +125,9 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 <input id="slippageInput" type="number" min="0" max="5" step="0.01" value="0">
 </div>
 </div>
-<div class="small yellow">
-مقادیر صفر هزینه واقعی را منعکس نمی‌کنند. کارمزد و لغزش واقعی را وارد کن.
-این محاسبه صرفاً ارزیابی فرضی سیگنال‌هاست، نه سود قابل تحقق.
+<div class="small yellow" id="costInfo">
+هزینه رفت‌وبرگشت = دو برابر مجموع کارمزد و لغزش هر طرف.
+تغییر تنظیمات، ارزیابی‌های ذخیره‌شده را نیز با فرض جدید بازنمایی می‌کند.
 </div>
 </div>
 
@@ -122,9 +135,7 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 <div class="label">کنترل کیفیت داده‌ها</div>
 <div class="value yellow" id="qualityStatus">هنوز بررسی نشده</div>
 <div class="small" id="qualityDetail">پس از دریافت کندل‌ها نمایش داده می‌شود.</div>
-<div class="small" id="unitDetail">
-مقایسه قیمت خام بازار و کندل تا زمان تأیید واحد غیرفعال است.
-</div>
+<div class="small" id="unitDetail">قیمت خام آمار بازار با قیمت کندل مقایسه نمی‌شود؛ واحد مستقل تأیید نشده است.</div>
 </div>
 
 <div class="card full">
@@ -141,7 +152,7 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 <div class="label">نتایج تحلیل بازارها</div>
 <div class="tablewrap">
 <table>
-<thead><tr><th>بازار</th><th>قیمت آخرین کندل</th><th>امتیاز</th><th>تأیید</th><th>نتیجه</th></tr></thead>
+<thead><tr><th>بازار</th><th>آخرین کندل</th><th>امتیاز</th><th>تأیید</th><th>نتیجه</th></tr></thead>
 <tbody id="marketResults"><tr><td colspan="5">هنوز تحلیلی انجام نشده است</td></tr></tbody>
 </table>
 </div>
@@ -160,14 +171,14 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 </div>
 
 <div class="card full">
-<div class="label">ارزیابی جداگانه ۱۰ استراتژی</div>
+<div class="label">ارزیابی مستقل ۱۰ استراتژی</div>
 <div class="small">
-ارزیابی مستقل هر استراتژی در افق‌های ۱۵ دقیقه، ۱ ساعت و ۴ ساعت.
-نتایج فقط بر اساس قیمت کندل‌های بسته‌شده محاسبه می‌شوند.
+افق‌ها: ۱۵ دقیقه، ۱ ساعت و ۴ ساعت. هر سیگنال جداگانه ارزیابی می‌شود.
+درصد موفقیت فقط از نمونه‌های تکمیل‌شده محاسبه می‌شود.
 </div>
 <div class="tablewrap">
 <table>
-<thead><tr><th>استراتژی</th><th>افق</th><th>نمونه</th><th>مثبت</th><th>منفی</th><th>درصد موفقیت</th><th>میانگین خالص</th></tr></thead>
+<thead><tr><th>استراتژی</th><th>افق</th><th>نمونه</th><th>مثبت</th><th>منفی</th><th>موفقیت</th><th>میانگین خالص</th></tr></thead>
 <tbody id="strategyEvaluation"><tr><td colspan="7">هنوز داده ارزیابی ثبت نشده است</td></tr></tbody>
 </table>
 </div>
@@ -183,14 +194,14 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 </table>
 </div>
 <div class="small">
-بازده‌ها فرضی هستند و به معنی اجرای معامله یا سود واقعی نیستند.
-هزینه‌ها بر اساس تنظیمات بالا محاسبه می‌شوند.
+این ارزیابی، سنجش جهت سیگنال است و به معنی اجرای معامله واقعی یا امکان انجام فروش استقراضی نیست.
+علامت † یعنی ارزیابی با تأخیر انجام شده است.
 </div>
 </div>
 
 <div class="card full">
 <div class="label">گزارش فعالیت</div>
-<div class="log" id="logs">MAHORA AI V12 آماده است.</div>
+<div class="log" id="logs">MAHORA AI V13 آماده است.</div>
 </div>
 
 <div class="card full">
@@ -200,35 +211,31 @@ Paper Trading غیرفعال است. هیچ اتصال معاملاتی در ا�
 </div>
 
 </div>
-
-<footer>MAHORA AI V12 | 15M | 10 STRATEGIES | READ ONLY</footer>
+<footer>MAHORA AI V13 | 15M | 10 STRATEGIES | READ ONLY</footer>
 </div>
 
 <script>
 (function(){
 "use strict";
 
-/* فقط API عمومی؛ هیچ endpoint معاملاتی وجود ندارد */
+/* فقط endpointهای عمومی بازار و کندل */
 var API="https://apiv2.nobitex.ir";
 var MAX_MARKETS=20;
 var MIN_CANDLES=100;
-var HISTORY_KEY="MAHORA_AI_V12_HISTORY";
-var PROCESSED_KEY="MAHORA_AI_V12_PROCESSED";
+var RESOLUTION=900;
+var HISTORY_KEY="MAHORA_AI_V13_HISTORY";
+var PROCESSED_KEY="MAHORA_AI_V13_PROCESSED";
+var LEGACY_HISTORY=["MAHORA_AI_V12_HISTORY","MAHORA_AI_V11_HISTORY"];
+var LEGACY_PROCESSED=["MAHORA_AI_V12_PROCESSED","MAHORA_AI_V11_PROCESSED"];
 
 var markets=[],results=[];
 var busy=false,stopRequested=false;
+var lastQuality=null;
 
 var names=[
-"EMA Crossover",
-"RSI + Divergence",
-"MACD Momentum",
-"Bollinger Bands",
-"VWAP",
-"Ichimoku Cloud",
-"ADX + DMI",
-"Supertrend",
-"Stochastic RSI",
-"Volume Breakout"
+"EMA Crossover","RSI + Divergence","MACD Momentum",
+"Bollinger Bands","VWAP","Ichimoku Cloud",
+"ADX + DMI","Supertrend","Stochastic RSI","Volume Breakout"
 ];
 
 var descriptions=[
@@ -247,10 +254,12 @@ var descriptions=[
 function $(id){return document.getElementById(id)}
 function num(x){return Number(x)}
 function finite(x){return Number.isFinite(x)}
-function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+function sleep(ms){return new Promise(function(resolve){setTimeout(resolve,ms)})}
 function fmt(x,d){
  return finite(x)?x.toLocaleString("en-US",{maximumFractionDigits:d===undefined?4:d}):"-";
 }
+function safeText(el,value){el.textContent=String(value)}
+function nowSec(){return Math.floor(Date.now()/1000)}
 
 function log(message,type){
  var el=document.createElement("div");
@@ -260,58 +269,67 @@ function log(message,type){
  $("logs").scrollTop=$("logs").scrollHeight;
 }
 
-function setApi(a,b,c){
- $("apiStatus").textContent=a;
- $("apiStatus").className="value "+c;
- $("apiDetail").textContent=b;
+function setApi(status,detail,color){
+ safeText($("apiStatus"),status);
+ $("apiStatus").className="value "+color;
+ safeText($("apiDetail"),detail);
 }
-
+function setCandleApi(status,detail,color){
+ safeText($("candleApiStatus"),status);
+ $("candleApiStatus").className="value "+color;
+ safeText($("candleApiDetail"),detail);
+}
 function progress(p,t){
  $("bar").style.width=Math.max(0,Math.min(100,p))+"%";
- $("progressText").textContent=t;
+ safeText($("progressText"),t);
 }
 
-function feeRate(){
- var x=num($("feeInput").value);
- return finite(x)&&x>=0&&x<=5?x:0;
+function readCostInput(id){
+ var raw=$(id).value;
+ var value=num(raw);
+ if(raw===""||!finite(value)||value<0||value>5)return null;
+ return value;
 }
-
-function slipRate(){
- var x=num($("slippageInput").value);
- return finite(x)&&x>=0&&x<=5?x:0;
-}
-
+function feeRate(){return readCostInput("feeInput")}
+function slipRate(){return readCostInput("slippageInput")}
+function costsValid(){return feeRate()!==null&&slipRate()!==null}
 function roundTripCost(){
+ if(!costsValid())return null;
  return 2*(feeRate()+slipRate());
+}
+function netReturn(gross){
+ var cost=roundTripCost();
+ return cost===null?null:gross-cost;
 }
 
 function renderStrategies(){
- $("strategyList").innerHTML="";
- names.forEach(function(n,i){
+ var body=$("strategyList");
+ body.innerHTML="";
+ names.forEach(function(name,i){
   var tr=document.createElement("tr");
-  [n,"آماده",descriptions[i]].forEach(function(v){
+  [name,"آماده",descriptions[i]].forEach(function(value){
    var td=document.createElement("td");
-   td.textContent=v;
+   td.textContent=value;
    tr.appendChild(td);
   });
-  $("strategyList").appendChild(tr);
+  body.appendChild(tr);
  });
 }
 
 function classifyFetchError(error){
- var m=String(error&&error.message||error);
+ var message=String(error&&error.message||error);
  if(!navigator.onLine)return "دستگاه آفلاین است";
- if(/Failed to fetch|NetworkError|Load failed/i.test(m)){
-  return "خطای شبکه یا محدودیت CORS مرورگر؛ علت قطعی مشخص نیست";
+ if(/AbortError|aborted/i.test(message))return "مهلت دریافت پاسخ تمام شد";
+ if(/Failed to fetch|NetworkError|Load failed/i.test(message)){
+  return "خطای شبکه یا محدودیت CORS؛ علت قطعی مشخص نیست";
  }
- if(/AbortError|مهلت/i.test(m))return "پاسخ API دیرتر از مهلت مجاز رسیده است";
- if(/HTTP 4|HTTP 5/i.test(m))return "سرور API پاسخ HTTP ناموفق داده است";
- return m;
+ if(/HTTP 4|HTTP 5/i.test(message))return "سرور API پاسخ HTTP ناموفق داده است";
+ return message;
 }
 
 async function request(url,retries){
  retries=retries===undefined?1:retries;
- var lastError;
+ var lastError=null;
 
  for(var attempt=0;attempt<=retries;attempt++){
   var controller=new AbortController();
@@ -324,7 +342,6 @@ async function request(url,retries){
     cache:"no-store",
     headers:{"Accept":"application/json"}
    });
-
    if(!response.ok)throw new Error("HTTP "+response.status);
 
    var data=await response.json();
@@ -334,40 +351,32 @@ async function request(url,retries){
   }catch(error){
    lastError=error;
    clearTimeout(timer);
-
    if(attempt<retries){
     log("تلاش مجدد دریافت "+(attempt+1)+" از "+retries,"yellow");
-    await sleep(800*(attempt+1));
+    await sleep(700*(attempt+1));
    }
   }
  }
-
  throw new Error(classifyFetchError(lastError));
 }
 
 function normalizeMarket(key){
  var s=String(key||"").trim().toLowerCase();
-
- if(/^[a-z0-9_]+-rls$/.test(s))
-  return s.slice(0,-4).toUpperCase()+"IRT";
-
- if(/^[a-z0-9_]+irt$/.test(s))
-  return s.toUpperCase();
-
+ if(/^[a-z0-9_]+-rls$/.test(s))return s.slice(0,-4).toUpperCase()+"IRT";
+ if(/^[a-z0-9_]+irt$/.test(s))return s.toUpperCase();
  return null;
 }
 
 async function getMarkets(){
- log("دریافت فهرست بازارهای ریالی نوبیتکس...");
- setApi("در حال دریافت","درخواست فهرست بازارها","yellow");
+ log("دریافت فهرست بازارهای ریالی...");
+ setApi("در حال دریافت","درخواست فهرست عمومی بازارها","yellow");
 
  var data=await request(API+"/market/stats?dstCurrency=rls",2);
-
  if(!data||data.status!=="ok"||!data.stats||typeof data.stats!=="object"){
-  throw new Error("پاسخ فهرست بازارها معتبر نیست");
+  throw new Error("ساختار پاسخ فهرست بازارها معتبر نیست");
  }
 
- var list=[],seen={};
+ var list=[],seen=Object.create(null);
 
  Object.keys(data.stats).forEach(function(key){
   var symbol=normalizeMarket(key);
@@ -376,636 +385,490 @@ async function getMarkets(){
   var s=data.stats[key]||{};
   if(s.isClosed===true)return;
 
-  var price=num(s.latest||s.mark||s.bestBuy||s.bestSell);
-  var volume=num(s.volumeDst||0);
-
+  var price=num(s.latest);
   if(!finite(price)||price<=0)return;
 
-  seen[symbol]=true;
+  var volume=num(s.volumeDst);
+  if(!finite(volume)||volume<0)volume=0;
 
-  list.push({
-   symbol:symbol,
-   sourceKey:key,
-   price:price,
-   volume:finite(volume)?volume:0
-  });
+  seen[symbol]=true;
+  list.push({symbol:symbol,sourceKey:key,price:price,volume:volume});
  });
 
  list.sort(function(a,b){return b.volume-a.volume});
-
- $("marketCount").textContent=String(list.length);
  markets=list.slice(0,MAX_MARKETS);
 
+ safeText($("marketCount"),list.length);
+
  if(!markets.length){
-  setApi("متصل","فهرست دریافت شد؛ بازار قابل استفاده پیدا نشد","yellow");
-  log("بازار ریالی قابل استفاده پیدا نشد.","red");
+  setApi("متصل","پاسخ دریافت شد اما بازار قابل استفاده پیدا نشد","yellow");
   return markets;
  }
 
  setApi("متصل",markets.length+" بازار برای بررسی انتخاب شد","green");
  log(list.length+" بازار شناسایی شد؛ "+markets.length+" بازار انتخاب شد.","green");
-
  return markets;
 }
 
 function symbolCandidates(item){
  var base=item.symbol.replace(/IRT$/,"");
- var candidates=[
-  item.symbol,
-  base+"-RLS",
-  item.sourceKey.toUpperCase()
- ];
-
- return candidates.filter(function(x,i,a){
-  return x&&a.indexOf(x)===i;
+ return [item.symbol,base+"-RLS",String(item.sourceKey).toUpperCase()]
+ .filter(function(value,index,array){
+  return value&&array.indexOf(value)===index;
  });
 }
 
-/* بررسی ساختار و کیفیت کندل‌ها */
-function validateCandleRows(d){
+/* تبدیل پاسخ UDF به کندل‌های کنترل‌شده */
+function validateCandleRows(data){
  var fields=["t","o","h","l","c","v"];
+ fields.forEach(function(key){
+  if(!Array.isArray(data[key]))throw new Error("ساختار نامعتبر "+key);
+ });
 
- for(var f=0;f<fields.length;f++){
-  if(!Array.isArray(d[fields[f]])){
-   throw new Error("ساختار نامعتبر "+fields[f]);
-  }
- }
+ var length=data.t.length;
+ if(length<MIN_CANDLES)throw new Error("تعداد کندل خام کافی نیست");
 
- var n=d.t.length;
+ fields.forEach(function(key){
+  if(data[key].length!==length)throw new Error("طول آرایه‌های کندل برابر نیست");
+ });
 
- if(n<MIN_CANDLES)throw new Error("تعداد کندل خام کافی نیست");
+ var rows=[],invalidRows=0;
 
- for(var f=0;f<fields.length;f++){
-  if(d[fields[f]].length!==n){
-   throw new Error("طول آرایه‌های کندل برابر نیست");
-  }
- }
-
- var rows=[];
-
- for(var i=0;i<n;i++){
-  var r={
-   t:num(d.t[i]),
-   o:num(d.o[i]),
-   h:num(d.h[i]),
-   l:num(d.l[i]),
-   c:num(d.c[i]),
-   v:num(d.v[i])
+ for(var i=0;i<length;i++){
+  var row={
+   t:num(data.t[i]),o:num(data.o[i]),h:num(data.h[i]),
+   l:num(data.l[i]),c:num(data.c[i]),v:num(data.v[i])
   };
 
-  if(!Object.keys(r).every(function(k){return finite(r[k])}))continue;
-
-  /* زمان باید Unix seconds باشد */
-  if(r.t<1000000000||r.t>9999999999)continue;
-
-  if(r.o<=0||r.h<=0||r.l<=0||r.c<=0||r.v<0)continue;
-
-  if(r.h<r.l||r.h<r.o||r.h<r.c||r.l>r.o||r.l>r.c)continue;
-
-  rows.push(r);
+  var values=Object.keys(row).every(function(k){return finite(row[k])});
+  if(!values||row.t<1000000000||row.t>9999999999||
+     row.o<=0||row.h<=0||row.l<=0||row.c<=0||row.v<0||
+     row.h<row.l||row.h<row.o||row.h<row.c||
+     row.l>row.o||row.l>row.c){
+   invalidRows++;
+   continue;
+  }
+  rows.push(row);
  }
 
  rows.sort(function(a,b){return a.t-b.t});
 
- var unique=[];
-
- rows.forEach(function(r){
-  if(!unique.length||unique[unique.length-1].t!==r.t){
-   unique.push(r);
+ var unique=[],duplicates=0;
+ rows.forEach(function(row){
+  if(unique.length&&unique[unique.length-1].t===row.t){
+   duplicates++;
+   return;
   }
+  unique.push(row);
  });
 
- var now=Math.floor(Date.now()/1000);
-
- /* فقط کندل‌هایی که زمان بسته‌شدن آن‌ها گذشته است */
- rows=unique.filter(function(r){
-  return r.t+900<=now;
+ var now=nowSec();
+ var closed=unique.filter(function(row){
+  return row.t+RESOLUTION<=now;
  });
 
- if(rows.length<MIN_CANDLES){
-  throw new Error("کندل بسته‌شده کافی نیست");
- }
+ if(closed.length<MIN_CANDLES)throw new Error("کندل بسته‌شده کافی نیست");
 
  var out={t:[],o:[],h:[],l:[],c:[],v:[]};
-
- rows.forEach(function(r){
-  ["t","o","h","l","c","v"].forEach(function(k){
-   out[k].push(r[k]);
-  });
+ closed.forEach(function(row){
+  fields.forEach(function(key){out[key].push(row[key])});
  });
 
+ out.rawInvalid=invalidRows;
+ out.duplicates=duplicates;
  return out;
 }
 
-function checkCandleQuality(a){
- var n=a.t.length;
- var gaps=0;
- var duplicateCount=0;
- var badJumpCount=0;
- var intervals=[];
+function checkCandleQuality(data){
+ var n=data.t.length;
+ var gaps=0,jumps=0;
+ var trailingGap=0;
  var warnings=[];
 
  for(var i=1;i<n;i++){
-  var delta=a.t[i]-a.t[i-1];
-  intervals.push(delta);
+  var delta=data.t[i]-data.t[i-1];
+  if(delta!==RESOLUTION){
+   gaps++;
+   if(i===n-1)trailingGap=Math.max(0,delta-RESOLUTION);
+  }
 
-  if(delta<=0)duplicateCount++;
-  if(delta!==900)gaps++;
-
-  /* جهش غیرعادی صرفاً هشدار است؛ داده خودکار حذف نمی‌شود */
-  var change=Math.abs(a.c[i]-a.c[i-1])/a.c[i-1]*100;
-  if(change>80)badJumpCount++;
+  var change=Math.abs(data.c[i]-data.c[i-1])/data.c[i-1]*100;
+  if(change>=50)jumps++;
  }
 
- var lastTime=a.t[n-1];
- var now=Math.floor(Date.now()/1000);
- var ageMinutes=(now-(lastTime+900))/60;
+ var age=(nowSec()-(data.t[n-1]+RESOLUTION))/60;
+ var invalid=data.rawInvalid||0;
+ var duplicates=data.duplicates||0;
 
- if(duplicateCount>0)warnings.push("زمان تکراری یا نامعتبر");
- if(gaps>Math.max(3,Math.floor(n*.03))){
-  warnings.push("فاصله زمانی زیاد بین کندل‌ها");
- }
- if(badJumpCount>0)warnings.push("جهش قیمتی غیرمعمول");
- if(ageMinutes>45)warnings.push("داده کندل قدیمی است");
- if(ageMinutes<0)warnings.push("زمان کندل نامعتبر است");
- if(n<MIN_CANDLES)warnings.push("داده ناکافی");
+ if(invalid>0)warnings.push(invalid+" ردیف نامعتبر حذف شد");
+ if(duplicates>0)warnings.push(duplicates+" زمان تکراری حذف شد");
+ if(gaps>3)warnings.push("تعداد فاصله‌های زمانی زیاد است");
+ if(trailingGap>1800)warnings.push("فاصله انتهای سری زمانی زیاد است");
+ if(jumps>0)warnings.push("جهش قیمتی بزرگ نیازمند بررسی است");
+ if(age>30)warnings.push("آخرین کندل قدیمی است");
+ if(age<0)warnings.push("زمان آخرین کندل نامعتبر است");
+
+ var valid=duplicates===0&&gaps<=3&&trailingGap<=1800&&
+  jumps===0&&age>=0&&age<=30&&n>=MIN_CANDLES;
 
  return {
-  valid:warnings.length===0,
-  count:n,
-  gaps:gaps,
-  duplicates:duplicateCount,
-  jumps:badJumpCount,
-  ageMinutes:ageMinutes,
-  lastTime:lastTime,
-  warnings:warnings
+  valid:valid,count:n,gaps:gaps,jumps:jumps,
+  duplicates:duplicates,invalidRows:invalid,
+  ageMinutes:age,trailingGap:trailingGap,warnings:warnings
  };
 }
 
 async function getCandles(item){
- var now=Math.floor(Date.now()/1000);
- var from=now-15*60*260;
+ var now=nowSec();
+ var from=now-RESOLUTION*1000;
  var candidates=symbolCandidates(item);
  var errors=[];
 
- for(var k=0;k<candidates.length;k++){
-  var sym=candidates[k];
-
-  var url=API+"/market/udf/history?symbol="+
-   encodeURIComponent(sym)+
+ for(var i=0;i<candidates.length;i++){
+  var symbol=candidates[i];
+  var url=API+"/market/udf/history?symbol="+encodeURIComponent(symbol)+
    "&resolution=15&from="+from+"&to="+now;
 
   try{
-   var d=await request(url,1);
-
-   if(!d||d.s!=="ok"){
-    throw new Error(d&&d.errmsg?d.errmsg:"پاسخ کندل معتبر نیست");
+   var response=await request(url,1);
+   if(!response||response.s!=="ok"){
+    throw new Error(response&&response.errmsg?response.errmsg:"پاسخ کندل معتبر نیست");
    }
 
-   var out=validateCandleRows(d);
-   out.sourceSymbol=sym;
-   out.quality=checkCandleQuality(out);
-
-   return out;
+   var candles=validateCandleRows(response);
+   candles.sourceSymbol=symbol;
+   candles.quality=checkCandleQuality(candles);
+   return candles;
 
   }catch(error){
-   errors.push(sym+": "+error.message);
+   errors.push(symbol+": "+error.message);
   }
  }
-
  throw new Error(errors.join(" | "));
 }
 
-/* اندیکاتورها */
+/* ابزارهای اندیکاتور */
+function ema(array,period){
+ var out=new Array(array.length).fill(null);
+ var count=0,sum=0,previous=null;
+ var factor=2/(period+1);
 
-function ema(arr,period){
- var out=new Array(arr.length).fill(null);
- var count=0,sum=0,prev=null,k=2/(period+1);
-
- for(var i=0;i<arr.length;i++){
-  if(!finite(arr[i])){
-   count=0;sum=0;prev=null;
-   continue;
+ for(var i=0;i<array.length;i++){
+  if(!finite(array[i])){
+   count=0;sum=0;previous=null;continue;
   }
-
-  if(prev===null){
-   count++;
-   sum+=arr[i];
-
-   if(count===period){
-    prev=sum/period;
-    out[i]=prev;
-   }
+  if(previous===null){
+   count++;sum+=array[i];
+   if(count===period){previous=sum/period;out[i]=previous}
   }else{
-   prev=arr[i]*k+prev*(1-k);
-   out[i]=prev;
+   previous=array[i]*factor+previous*(1-factor);
+   out[i]=previous;
   }
  }
-
  return out;
 }
 
-function sma(arr,p,end){
- if(end-p+1<0)return null;
- var s=0;
-
- for(var i=end-p+1;i<=end;i++){
-  if(!finite(arr[i]))return null;
-  s+=arr[i];
+function sma(array,period,end){
+ if(end-period+1<0)return null;
+ var sum=0;
+ for(var i=end-period+1;i<=end;i++){
+  if(!finite(array[i]))return null;
+  sum+=array[i];
  }
-
- return s/p;
+ return sum/period;
 }
 
-function stddev(arr,p,end,mean){
- if(!finite(mean)||end-p+1<0)return null;
- var s=0;
-
- for(var i=end-p+1;i<=end;i++){
-  if(!finite(arr[i]))return null;
-  s+=Math.pow(arr[i]-mean,2);
+function stddev(array,period,end,mean){
+ if(!finite(mean)||end-period+1<0)return null;
+ var sum=0;
+ for(var i=end-period+1;i<=end;i++){
+  if(!finite(array[i]))return null;
+  sum+=Math.pow(array[i]-mean,2);
  }
-
- return Math.sqrt(s/p);
+ return Math.sqrt(sum/period);
 }
 
-function highest(arr,end,p){
- if(end-p+1<0)return null;
- var m=-Infinity;
-
- for(var i=end-p+1;i<=end;i++){
-  if(!finite(arr[i]))return null;
-  m=Math.max(m,arr[i]);
+function highest(array,end,period){
+ if(end-period+1<0)return null;
+ var value=-Infinity;
+ for(var i=end-period+1;i<=end;i++){
+  if(!finite(array[i]))return null;
+  value=Math.max(value,array[i]);
  }
-
- return m;
+ return value;
 }
 
-function lowest(arr,end,p){
- if(end-p+1<0)return null;
- var m=Infinity;
-
- for(var i=end-p+1;i<=end;i++){
-  if(!finite(arr[i]))return null;
-  m=Math.min(m,arr[i]);
+function lowest(array,end,period){
+ if(end-period+1<0)return null;
+ var value=Infinity;
+ for(var i=end-period+1;i<=end;i++){
+  if(!finite(array[i]))return null;
+  value=Math.min(value,array[i]);
  }
-
- return m;
+ return value;
 }
 
-function rsi(arr,p){
- var out=new Array(arr.length).fill(null);
- if(arr.length<=p)return out;
-
+function rsi(array,period){
+ var out=new Array(array.length).fill(null);
+ if(array.length<=period)return out;
  var gain=0,loss=0;
 
- for(var i=1;i<=p;i++){
-  var d=arr[i]-arr[i-1];
-  gain+=Math.max(0,d);
-  loss+=Math.max(0,-d);
+ for(var i=1;i<=period;i++){
+  var change=array[i]-array[i-1];
+  gain+=Math.max(0,change);
+  loss+=Math.max(0,-change);
  }
+ var avgGain=gain/period,avgLoss=loss/period;
+ out[period]=avgLoss===0?100:avgGain===0?0:100-100/(1+avgGain/avgLoss);
 
- var ag=gain/p,al=loss/p;
-
- out[p]=al===0?100:ag===0?0:100-100/(1+ag/al);
-
- for(var i=p+1;i<arr.length;i++){
-  var d=arr[i]-arr[i-1];
-
-  ag=(ag*(p-1)+Math.max(0,d))/p;
-  al=(al*(p-1)+Math.max(0,-d))/p;
-
-  out[i]=al===0?100:ag===0?0:100-100/(1+ag/al);
+ for(var i=period+1;i<array.length;i++){
+  var change=array[i]-array[i-1];
+  avgGain=(avgGain*(period-1)+Math.max(0,change))/period;
+  avgLoss=(avgLoss*(period-1)+Math.max(0,-change))/period;
+  out[i]=avgLoss===0?100:avgGain===0?0:100-100/(1+avgGain/avgLoss);
  }
-
  return out;
 }
 
-function atr(a,p){
- var n=a.c.length;
+function atr(data,period){
+ var n=data.c.length;
  var tr=new Array(n).fill(null);
  var out=new Array(n).fill(null);
 
  for(var i=1;i<n;i++){
   tr[i]=Math.max(
-   a.h[i]-a.l[i],
-   Math.abs(a.h[i]-a.c[i-1]),
-   Math.abs(a.l[i]-a.c[i-1])
+   data.h[i]-data.l[i],
+   Math.abs(data.h[i]-data.c[i-1]),
+   Math.abs(data.l[i]-data.c[i-1])
   );
  }
+ if(n<=period)return out;
 
- if(n<=p)return out;
+ var initial=0;
+ for(var i=1;i<=period;i++)initial+=tr[i];
+ out[period]=initial/period;
 
- var first=0;
-
- for(var i=1;i<=p;i++)first+=tr[i];
-
- out[p]=first/p;
-
- for(var i=p+1;i<n;i++){
-  out[i]=(out[i-1]*(p-1)+tr[i])/p;
+ for(var i=period+1;i<n;i++){
+  out[i]=(out[i-1]*(period-1)+tr[i])/period;
  }
-
  return out;
 }
 
-function adxDmi(a,p){
- var n=a.c.length;
+function adxDmi(data,period){
  var tr=[],plus=[],minus=[];
-
- for(var i=1;i<n;i++){
-  var up=a.h[i]-a.h[i-1];
-  var down=a.l[i-1]-a.l[i];
-
+ for(var i=1;i<data.c.length;i++){
+  var up=data.h[i]-data.h[i-1];
+  var down=data.l[i-1]-data.l[i];
   plus.push(up>down&&up>0?up:0);
   minus.push(down>up&&down>0?down:0);
-
   tr.push(Math.max(
-   a.h[i]-a.l[i],
-   Math.abs(a.h[i]-a.c[i-1]),
-   Math.abs(a.l[i]-a.c[i-1])
+   data.h[i]-data.l[i],
+   Math.abs(data.h[i]-data.c[i-1]),
+   Math.abs(data.l[i]-data.c[i-1])
   ));
  }
+ if(tr.length<period*2)return {adx:null,plus:null,minus:null};
 
- if(tr.length<p*2){
-  return {adx:null,plus:null,minus:null};
+ var sumTr=0,sumPlus=0,sumMinus=0;
+ for(var i=0;i<period;i++){
+  sumTr+=tr[i];sumPlus+=plus[i];sumMinus+=minus[i];
  }
-
- var st=0,sp=0,sm=0;
-
- for(var i=0;i<p;i++){
-  st+=tr[i];sp+=plus[i];sm+=minus[i];
- }
-
  var dx=[];
 
- function push(){
-  var P=st?100*sp/st:0;
-  var M=st?100*sm/st:0;
-  dx.push({
-   dx:P+M?100*Math.abs(P-M)/(P+M):0,
-   p:P,m:M
-  });
+ function addDx(){
+  var p=sumTr?100*sumPlus/sumTr:0;
+  var m=sumTr?100*sumMinus/sumTr:0;
+  dx.push({dx:p+m?100*Math.abs(p-m)/(p+m):0,p:p,m:m});
+ }
+ addDx();
+
+ for(var i=period;i<tr.length;i++){
+  sumTr=sumTr-sumTr/period+tr[i];
+  sumPlus=sumPlus-sumPlus/period+plus[i];
+  sumMinus=sumMinus-sumMinus/period+minus[i];
+  addDx();
  }
 
- push();
-
- for(var i=p;i<tr.length;i++){
-  st=st-st/p+tr[i];
-  sp=sp-sp/p+plus[i];
-  sm=sm-sm/p+minus[i];
-  push();
- }
-
- if(dx.length<p)return {adx:null,plus:null,minus:null};
-
+ if(dx.length<period)return {adx:null,plus:null,minus:null};
  var adx=0;
-
- for(var i=0;i<p;i++)adx+=dx[i].dx;
- adx/=p;
-
- for(var i=p;i<dx.length;i++){
-  adx=(adx*(p-1)+dx[i].dx)/p;
- }
+ for(var i=0;i<period;i++)adx+=dx[i].dx;
+ adx/=period;
+ for(var i=period;i<dx.length;i++)adx=(adx*(period-1)+dx[i].dx)/period;
 
  var last=dx[dx.length-1];
-
  return {adx:adx,plus:last.p,minus:last.m};
 }
 
-function supertrend(a,p,mult){
- var n=a.c.length;
- var at=atr(a,p);
+function supertrend(data,period,multiplier){
+ var n=data.c.length,values=atr(data,period);
  var upper=new Array(n).fill(null);
  var lower=new Array(n).fill(null);
- var dir=new Array(n).fill(0);
+ var direction=new Array(n).fill(0);
 
  for(var i=0;i<n;i++){
-  if(!finite(at[i]))continue;
-
-  var mid=(a.h[i]+a.l[i])/2;
-  var bu=mid+mult*at[i];
-  var bl=mid-mult*at[i];
+  if(!finite(values[i]))continue;
+  var mid=(data.h[i]+data.l[i])/2;
+  var basicUpper=mid+multiplier*values[i];
+  var basicLower=mid-multiplier*values[i];
 
   if(i===0||!finite(upper[i-1])){
-   upper[i]=bu;
-   lower[i]=bl;
-   dir[i]=1;
-   continue;
+   upper[i]=basicUpper;lower[i]=basicLower;direction[i]=1;continue;
   }
 
-  upper[i]=bu<upper[i-1]||a.c[i-1]>upper[i-1]?bu:upper[i-1];
-  lower[i]=bl>lower[i-1]||a.c[i-1]<lower[i-1]?bl:lower[i-1];
+  upper[i]=basicUpper<upper[i-1]||data.c[i-1]>upper[i-1]?basicUpper:upper[i-1];
+  lower[i]=basicLower>lower[i-1]||data.c[i-1]<lower[i-1]?basicLower:lower[i-1];
 
-  dir[i]=dir[i-1]===1?
-   (a.c[i]<lower[i-1]?-1:1):
-   (a.c[i]>upper[i-1]?1:-1);
+  direction[i]=direction[i-1]===1?
+   (data.c[i]<lower[i-1]?-1:1):
+   (data.c[i]>upper[i-1]?1:-1);
  }
-
- return {
-  direction:dir[n-1],
-  upper:upper[n-1],
-  lower:lower[n-1]
- };
+ return {direction:direction[n-1],upper:upper[n-1],lower:lower[n-1]};
 }
 
-function ichimoku(a,i){
- if(i<52)return null;
-
- var h9=highest(a.h,i,9);
- var l9=lowest(a.l,i,9);
- var h26=highest(a.h,i,26);
- var l26=lowest(a.l,i,26);
- var h52=highest(a.h,i,52);
- var l52=lowest(a.l,i,52);
-
- if(!finite(h9)||!finite(l9)||!finite(h26)||
- !finite(l26)||!finite(h52)||!finite(l52))return null;
-
- var t=(h9+l9)/2;
- var k=(h26+l26)/2;
-
- return {
-  tenkan:t,
-  kijun:k,
-  spanA:(t+k)/2,
-  spanB:(h52+l52)/2
- };
+function ichimoku(data,index){
+ if(index<52)return null;
+ var h9=highest(data.h,index,9),l9=lowest(data.l,index,9);
+ var h26=highest(data.h,index,26),l26=lowest(data.l,index,26);
+ var h52=highest(data.h,index,52),l52=lowest(data.l,index,52);
+ if(![h9,l9,h26,l26,h52,l52].every(finite))return null;
+ var tenkan=(h9+l9)/2,kijun=(h26+l26)/2;
+ return {tenkan:tenkan,kijun:kijun,spanA:(tenkan+kijun)/2,spanB:(h52+l52)/2};
 }
 
-function pivot(arr,i,type,left,right){
- if(i-left<0||i+right>=arr.length)return false;
-
- for(var j=i-left;j<=i+right;j++){
-  if(j===i)continue;
-
-  if(type==="low"&&arr[j]<=arr[i])return false;
-  if(type==="high"&&arr[j]>=arr[i])return false;
+function pivot(array,index,type,left,right){
+ if(index-left<0||index+right>=array.length)return false;
+ for(var j=index-left;j<=index+right;j++){
+  if(j===index)continue;
+  if(type==="low"&&array[j]<=array[index])return false;
+  if(type==="high"&&array[j]>=array[index])return false;
  }
-
  return true;
 }
 
-function divergence(a,rr,i){
+function divergence(data,relative,index){
  var lows=[],highs=[];
- var start=Math.max(5,i-45);
- var end=i-5;
-
+ var start=Math.max(5,index-45),end=index-5;
  for(var j=start;j<=end;j++){
-  if(pivot(a.l,j,"low",3,3)&&finite(rr[j]))lows.push(j);
-  if(pivot(a.h,j,"high",3,3)&&finite(rr[j]))highs.push(j);
+  if(pivot(data.l,j,"low",3,3)&&finite(relative[j]))lows.push(j);
+  if(pivot(data.h,j,"high",3,3)&&finite(relative[j]))highs.push(j);
  }
-
- var bull=false,bear=false;
-
+ var bullish=false,bearish=false;
  if(lows.length>=2){
-  var x=lows[lows.length-2];
-  var y=lows[lows.length-1];
-  bull=a.l[y]<a.l[x]&&rr[y]>rr[x];
+  var x=lows[lows.length-2],y=lows[lows.length-1];
+  bullish=data.l[y]<data.l[x]&&relative[y]>relative[x];
  }
-
  if(highs.length>=2){
-  var x=highs[highs.length-2];
-  var y=highs[highs.length-1];
-  bear=a.h[y]>a.h[x]&&rr[y]<rr[x];
+  var x=highs[highs.length-2],y=highs[highs.length-1];
+  bearish=data.h[y]>data.h[x]&&relative[y]<relative[x];
  }
-
- return {bullish:bull,bearish:bear};
+ return {bullish:bullish,bearish:bearish};
 }
 
-function stochRsi(rr,p){
- var raw=new Array(rr.length).fill(null);
- var k=new Array(rr.length).fill(null);
- var d=new Array(rr.length).fill(null);
+function stochRsi(relative,period){
+ var raw=new Array(relative.length).fill(null);
+ var k=new Array(relative.length).fill(null);
+ var d=new Array(relative.length).fill(null);
 
- for(var i=p-1;i<rr.length;i++){
-  var lo=Infinity,hi=-Infinity,ok=true;
-
-  for(var j=i-p+1;j<=i;j++){
-   if(!finite(rr[j])){ok=false;break}
-   lo=Math.min(lo,rr[j]);
-   hi=Math.max(hi,rr[j]);
+ for(var i=period-1;i<relative.length;i++){
+  var lo=Infinity,hi=-Infinity,valid=true;
+  for(var j=i-period+1;j<=i;j++){
+   if(!finite(relative[j])){valid=false;break}
+   lo=Math.min(lo,relative[j]);hi=Math.max(hi,relative[j]);
   }
-
-  if(ok)raw[i]=hi===lo?50:100*(rr[i]-lo)/(hi-lo);
+  if(valid)raw[i]=hi===lo?50:100*(relative[i]-lo)/(hi-lo);
  }
-
  for(var i=0;i<raw.length;i++){
   k[i]=sma(raw,3,i);
   d[i]=sma(k,3,i);
  }
-
  return {k:k,d:d};
 }
 
-function vote(signal,reason){
- return {signal:signal,reason:reason};
-}
+function vote(signal,reason){return {signal:signal,reason:reason}}
 
-/* اجرای ۱۰ استراتژی */
-function analyze(a){
- var c=a.c,h=a.h,l=a.l,v=a.v;
+/* تحلیل ۱۰ استراتژی */
+function analyze(data){
+ var c=data.c,h=data.h,l=data.l,v=data.v;
  var n=c.length,i=n-1;
-
  if(n<MIN_CANDLES)throw new Error("داده کافی نیست");
 
- var e9=ema(c,9);
- var e21=ema(c,21);
- var e50=ema(c,50);
- var rr=rsi(c,14);
-
- var fast=ema(c,12);
- var slow=ema(c,26);
+ var e9=ema(c,9),e21=ema(c,21),e50=ema(c,50);
+ var relative=rsi(c,14);
+ var fast=ema(c,12),slow=ema(c,26);
  var macd=new Array(n).fill(null);
 
  for(var j=0;j<n;j++){
-  if(finite(fast[j])&&finite(slow[j])){
-   macd[j]=fast[j]-slow[j];
-  }
+  if(finite(fast[j])&&finite(slow[j]))macd[j]=fast[j]-slow[j];
  }
-
- var sig=ema(macd,9);
- var hist=new Array(n).fill(null);
-
+ var macdSignal=ema(macd,9);
+ var histogram=new Array(n).fill(null);
  for(var j=0;j<n;j++){
-  if(finite(macd[j])&&finite(sig[j])){
-   hist[j]=macd[j]-sig[j];
-  }
+  if(finite(macd[j])&&finite(macdSignal[j]))histogram[j]=macd[j]-macdSignal[j];
  }
 
- var mn=sma(c,20,i);
- var sn=stddev(c,20,i,mn);
- var un=mn+2*sn;
- var ln=mn-2*sn;
+ var mean=sma(c,20,i),deviation=stddev(c,20,i,mean);
+ var upper=mean+2*deviation,lower=mean-2*deviation;
+ var previousMean=sma(c,20,i-1);
+ var previousDeviation=stddev(c,20,i-1,previousMean);
+ var previousUpper=previousMean+2*previousDeviation;
+ var previousLower=previousMean-2*previousDeviation;
 
- var mp=sma(c,20,i-1);
- var sp=stddev(c,20,i-1,mp);
- var up=mp+2*sp;
- var lp=mp-2*sp;
-
- var vn=0,vd=0;
-
+ var volumeNumerator=0,volumeDenominator=0;
  for(var j=Math.max(0,i-95);j<=i;j++){
   var typical=(h[j]+l[j]+c[j])/3;
-  vn+=typical*v[j];
-  vd+=v[j];
+  volumeNumerator+=typical*v[j];
+  volumeDenominator+=v[j];
  }
+ var vwap=volumeDenominator>0?volumeNumerator/volumeDenominator:c[i];
 
- var vwap=vd>0?vn/vd:c[i];
-
- var currentIch=ichimoku(a,i);
- var cloud=ichimoku(a,i-26);
- var ad=adxDmi(a,14);
- var st=supertrend(a,10,3);
- var div=divergence(a,rr,i);
- var sr=stochRsi(rr,14);
-
- var avgVol=sma(v,20,i-1);
+ var currentCloud=ichimoku(data,i);
+ var shiftedCloud=ichimoku(data,i-26);
+ var ad=adxDmi(data,14);
+ var st=supertrend(data,10,3);
+ var div=divergence(data,relative,i);
+ var stochastic=stochRsi(relative,14);
+ var avgVolume=sma(v,20,i-1);
  var priorHigh=highest(h,i-1,20);
  var priorLow=lowest(l,i-1,20);
-
  var signals=[];
 
- var eb=e9[i]>e21[i]&&e9[i-1]<=e21[i-1];
- var es=e9[i]<e21[i]&&e9[i-1]>=e21[i-1];
-
+ var emaBuy=e9[i]>e21[i]&&e9[i-1]<=e21[i-1];
+ var emaSell=e9[i]<e21[i]&&e9[i-1]>=e21[i-1];
  signals.push(vote(
-  eb&&e21[i]>e50[i]?1:
-  es&&e21[i]<e50[i]?-1:0,
-  "تقاطع EMA 9/21 و فیلتر EMA 50"
+  emaBuy&&e21[i]>e50[i]?1:emaSell&&e21[i]<e50[i]?-1:0,
+  "تقاطع EMA 9/21 با فیلتر EMA 50"
  ));
 
  signals.push(vote(
-  (div.bullish&&rr[i]<50)||(rr[i-1]<30&&rr[i]>=30)?1:
-  (div.bearish&&rr[i]>50)||(rr[i-1]>70&&rr[i]<=70)?-1:0,
-  "RSI="+rr[i].toFixed(1)+"؛ واگرایی و اشباع"
+  (div.bullish&&relative[i]<50)||(relative[i-1]<30&&relative[i]>=30)?1:
+  (div.bearish&&relative[i]>50)||(relative[i-1]>70&&relative[i]<=70)?-1:0,
+  "RSI="+relative[i].toFixed(1)+"؛ واگرایی و اشباع"
  ));
 
  signals.push(vote(
-  finite(hist[i])&&finite(hist[i-1])&&hist[i]>0&&hist[i-1]<=0?1:
-  finite(hist[i])&&finite(hist[i-1])&&hist[i]<0&&hist[i-1]>=0?-1:0,
+  finite(histogram[i])&&finite(histogram[i-1])&&histogram[i]>0&&histogram[i-1]<=0?1:
+  finite(histogram[i])&&finite(histogram[i-1])&&histogram[i]<0&&histogram[i-1]>=0?-1:0,
   "تقاطع MACD و خط سیگنال"
  ));
 
  signals.push(vote(
-  c[i-1]<lp&&c[i]>ln?1:
-  c[i-1]>up&&c[i]<un?-1:0,
-  "بازگشت به داخل باند بولینگر"
+  c[i-1]<previousLower&&c[i]>lower?1:
+  c[i-1]>previousUpper&&c[i]<upper?-1:0,
+  "بازگشت قیمت به داخل باند بولینگر"
  ));
 
  signals.push(vote(
-  c[i]>vwap*1.001?1:
-  c[i]<vwap*.999?-1:0,
-  "مقایسه با VWAP متحرک"
+  c[i]>vwap*1.001?1:c[i]<vwap*.999?-1:0,
+  "VWAP متحرک ۲۴ ساعته"
  ));
 
  signals.push(vote(
-  cloud&&currentIch&&
-  c[i]>Math.max(cloud.spanA,cloud.spanB)&&
-  currentIch.tenkan>currentIch.kijun?1:
-  cloud&&currentIch&&
-  c[i]<Math.min(cloud.spanA,cloud.spanB)&&
-  currentIch.tenkan<currentIch.kijun?-1:0,
+  shiftedCloud&&currentCloud&&
+  c[i]>Math.max(shiftedCloud.spanA,shiftedCloud.spanB)&&
+  currentCloud.tenkan>currentCloud.kijun?1:
+  shiftedCloud&&currentCloud&&
+  c[i]<Math.min(shiftedCloud.spanA,shiftedCloud.spanB)&&
+  currentCloud.tenkan<currentCloud.kijun?-1:0,
   "ابر ایچیموکو، تنکان و کیجون"
  ));
 
@@ -1018,92 +881,132 @@ function analyze(a){
  ));
 
  signals.push(vote(
-  st.direction===1?1:
-  st.direction===-1?-1:0,
+  st.direction===1?1:st.direction===-1?-1:0,
   "Supertrend 10 / ATR 3"
  ));
 
- var k=sr.k[i],d=sr.d[i];
- var pk=sr.k[i-1],pd=sr.d[i-1];
-
+ var k=stochastic.k[i],d=stochastic.d[i];
+ var previousK=stochastic.k[i-1],previousD=stochastic.d[i-1];
  signals.push(vote(
-  finite(k)&&finite(d)&&finite(pk)&&finite(pd)&&
-  pk<=pd&&k>d&&k<25?1:
-  finite(k)&&finite(d)&&finite(pk)&&finite(pd)&&
-  pk>=pd&&k<d&&k>75?-1:0,
+  finite(k)&&finite(d)&&finite(previousK)&&finite(previousD)&&
+  previousK<=previousD&&k>d&&k<25?1:
+  finite(k)&&finite(d)&&finite(previousK)&&finite(previousD)&&
+  previousK>=previousD&&k<d&&k>75?-1:0,
   "Stochastic RSI؛ K="+(finite(k)?k.toFixed(1):"-")+
   " / D="+(finite(d)?d.toFixed(1):"-")
  ));
 
- var volOk=avgVol!==null&&avgVol>0&&v[i]>avgVol*1.5;
-
+ var volumeConfirmed=avgVolume!==null&&avgVolume>0&&v[i]>avgVolume*1.5;
  signals.push(vote(
-  volOk&&c[i]>priorHigh?1:
-  volOk&&c[i]<priorLow?-1:0,
-  volOk?"حجم بیش از ۱.۵ برابر میانگین":"شکست حجمی تأیید نشد"
+  volumeConfirmed&&c[i]>priorHigh?1:
+  volumeConfirmed&&c[i]<priorLow?-1:0,
+  volumeConfirmed?"حجم بیش از ۱.۵ برابر میانگین":"شکست حجمی تأیید نشد"
  ));
 
- var score=signals.reduce(function(s,x){return s+x.signal},0);
- var buys=signals.filter(function(x){return x.signal===1}).length;
- var sells=signals.filter(function(x){return x.signal===-1}).length;
-
- var decision=
-  buys>=6&&score>=6?"تمایل صعودی قوی":
-  sells>=6&&score<=-6?"تمایل نزولی قوی":
-  "بدون سیگنال قوی";
+ var score=signals.reduce(function(sum,item){return sum+item.signal},0);
+ var buys=signals.filter(function(item){return item.signal===1}).length;
+ var sells=signals.filter(function(item){return item.signal===-1}).length;
+ var decision=buys>=6&&score>=6?"تمایل صعودی قوی":
+  sells>=6&&score<=-6?"تمایل نزولی قوی":"بدون سیگنال قوی";
 
  return {
-  price:c[i],
-  time:a.t[i],
-  score:score,
-  buys:buys,
-  sells:sells,
-  decision:decision,
-  signals:signals,
-  rsi:rr[i]
+  price:c[i],time:data.t[i],score:score,buys:buys,sells:sells,
+  decision:decision,signals:signals
  };
 }
 
-/* تاریخچه */
-function readHistory(){
+/* مهاجرت و ذخیره تاریخچه */
+function parseStorage(key){
  try{
-  var x=JSON.parse(localStorage.getItem(HISTORY_KEY)||"[]");
-
-  if(Array.isArray(x))return x;
-
-  return [];
- }catch(e){return []}
+  var value=JSON.parse(localStorage.getItem(key)||"[]");
+  return Array.isArray(value)?value:null;
+ }catch(error){return null}
 }
 
-function saveHistory(x){
+function normalizeHistoryItem(item){
+ if(!item||typeof item!=="object")return null;
+ var time=num(item.time),entry=num(item.entry);
+ if(!item.symbol||!item.strategy||!finite(time)||!finite(entry)||entry<=0)return null;
+
+ var normalized={
+  symbol:String(item.symbol),
+  strategy:String(item.strategy),
+  direction:item.direction==="صعودی"?"صعودی":"نزولی",
+  entry:entry,time:time,
+  h1:item.h1||null,h4:item.h4||null,h16:item.h16||null
+ };
+
+ [1,4,16].forEach(function(h){
+  var key="h"+h,z=normalized[key];
+  if(!z||typeof z!=="object"){normalized[key]=null;return}
+  var gross=num(z.gross);
+  if(!finite(gross)){
+   var oldNet=num(z.net),oldCost=num(z.cost);
+   if(finite(oldNet)&&finite(oldCost))gross=oldNet+oldCost;
+   else{normalized[key]=null;return}
+  }
+  normalized[key]={
+   price:finite(num(z.price))?num(z.price):null,
+   gross:gross,
+   time:finite(num(z.time))?num(z.time):null,
+   lateMinutes:finite(num(z.lateMinutes))?Math.max(0,num(z.lateMinutes)):0
+  };
+ });
+ return normalized;
+}
+
+function readHistory(){
+ var current=parseStorage(HISTORY_KEY);
+ if(current!==null)return current.map(normalizeHistoryItem).filter(Boolean);
+
+ var migrated=[];
+ for(var i=0;i<LEGACY_HISTORY.length;i++){
+  var old=parseStorage(LEGACY_HISTORY[i]);
+  if(old&&old.length){
+   migrated=old.map(normalizeHistoryItem).filter(Boolean);
+   break;
+  }
+ }
+ if(migrated.length){
+  saveHistory(migrated);
+  log("تاریخچه نسخه قبلی به V13 منتقل شد.","green");
+ }
+ return migrated;
+}
+
+function saveHistory(history){
  try{
-  localStorage.setItem(HISTORY_KEY,JSON.stringify(x.slice(-3000)));
- }catch(e){
-  log("ذخیره تاریخچه ممکن نشد","red");
+  localStorage.setItem(HISTORY_KEY,JSON.stringify(history.slice(-3000)));
+ }catch(error){
+  log("ذخیره تاریخچه ممکن نشد؛ فضای ذخیره‌سازی مرورگر را بررسی کن.","red");
  }
 }
 
 function readProcessed(){
  try{
-  return JSON.parse(localStorage.getItem(PROCESSED_KEY)||"{}")||{};
- }catch(e){return {}}
-}
+  var current=JSON.parse(localStorage.getItem(PROCESSED_KEY)||"null");
+  if(current&&typeof current==="object")return current;
+ }catch(error){}
 
-function saveProcessed(x){
- try{
-  localStorage.setItem(PROCESSED_KEY,JSON.stringify(x));
- }catch(e){
-  log("ذخیره وضعیت پردازش ممکن نشد","red");
+ for(var i=0;i<LEGACY_PROCESSED.length;i++){
+  try{
+   var old=JSON.parse(localStorage.getItem(LEGACY_PROCESSED[i])||"null");
+   if(old&&typeof old==="object"){
+    saveProcessed(old);
+    return old;
+   }
+  }catch(error){}
  }
+ return Object.create(null);
 }
 
-/*
-ارزیابی هر سیگنال در سه افق:
-1 کندل = 15 دقیقه
-4 کندل = 1 ساعت
-16 کندل = 4 ساعت
-*/
-function updateHistory(symbol,a){
+function saveProcessed(value){
+ try{localStorage.setItem(PROCESSED_KEY,JSON.stringify(value))}
+ catch(error){log("ذخیره وضعیت پردازش ممکن نشد.","red")}
+}
+
+/* ارزیابی فقط پس از پایان افق زمانی */
+function updateHistory(symbol,data){
  var history=readHistory();
  var changed=false;
  var horizons=[1,4,16];
@@ -1113,141 +1016,77 @@ function updateHistory(symbol,a){
 
   horizons.forEach(function(h){
    var key="h"+h;
-   if(item[key])return;
+   if(item[key]!==null)return;
 
-   var target=Number(item.time)+900+h*900;
+   /* زمان سیگنال، زمان بازشدن کندل است.
+      ورود فرضی در بسته‌شدن همان کندل انجام می‌شود. */
+   var targetClose=Number(item.time)+RESOLUTION*(1+h);
+   var found=-1;
 
-   for(var i=0;i<a.t.length;i++){
-    var closeTime=Number(a.t[i])+900;
-
-    if(closeTime>=target){
-     var exit=a.c[i];
-     var sign=item.direction==="صعودی"?1:-1;
-
-     var gross=sign*(exit-item.entry)/item.entry*100;
-     var cost=roundTripCost();
-     var net=gross-cost;
-
-     item[key]={
-      price:exit,
-      gross:gross,
-      net:net,
-      cost:cost,
-      win:net>0,
-      time:a.t[i],
-      lateMinutes:Math.max(0,(closeTime-target)/60)
-     };
-
-     changed=true;
-     break;
+   for(var i=0;i<data.t.length;i++){
+    var candleClose=Number(data.t[i])+RESOLUTION;
+    if(candleClose>=targetClose){
+     found=i;break;
     }
    }
+   if(found<0)return;
+
+   var exit=data.c[found];
+   if(!finite(exit)||exit<=0)return;
+
+   var direction=item.direction==="صعودی"?1:-1;
+   var gross=direction*(exit-item.entry)/item.entry*100;
+   var actualClose=data.t[found]+RESOLUTION;
+
+   item[key]={
+    price:exit,
+    gross:gross,
+    time:data.t[found],
+    lateMinutes:Math.max(0,(actualClose-targetClose)/60)
+   };
+   changed=true;
   });
  });
 
  if(changed)saveHistory(history);
 }
 
-function recordSignals(symbol,a,result){
+function recordSignals(symbol,data,analysis){
  var history=readHistory();
- var t=a.t[a.t.length-1];
+ var signalTime=data.t[data.t.length-1];
 
- result.signals.forEach(function(s,index){
-  if(s.signal===0)return;
+ analysis.signals.forEach(function(signal,index){
+  if(signal.signal===0)return;
 
-  var exists=history.some(function(x){
-   return x.symbol===symbol&&
-    x.strategy===names[index]&&
-    Number(x.time)===Number(t);
+  var exists=history.some(function(item){
+   return item.symbol===symbol&&item.strategy===names[index]&&
+    Number(item.time)===Number(signalTime);
   });
-
   if(exists)return;
 
   history.push({
    symbol:symbol,
    strategy:names[index],
-   direction:s.signal===1?"صعودی":"نزولی",
-   entry:result.price,
-   time:t,
-   score:s.signal,
-   h1:null,
-   h4:null,
-   h16:null
+   direction:signal.signal===1?"صعودی":"نزولی",
+   entry:analysis.price,
+   time:signalTime,
+   h1:null,h4:null,h16:null
   });
  });
 
  saveHistory(history);
 }
 
-function outcomeText(x){
- if(!x)return "در انتظار";
-
- var late=x.lateMinutes>15?" *":"";
-
- return (x.net>0?"مثبت ":"منفی ")+
-  (x.net>0?"+":"")+
-  x.net.toFixed(2)+"٪"+late;
+function outcomeNet(outcome){
+ if(!outcome)return null;
+ return netReturn(outcome.gross);
 }
-
-function renderHistory(){
- var history=readHistory();
- var body=$("historyResults");
-
- body.innerHTML="";
-
- if(!history.length){
-  body.innerHTML="<tr><td colspan='7'>هنوز سیگنالی ثبت نشده است</td></tr>";
-  $("historySummary").textContent="هنوز سیگنالی ثبت نشده است.";
-  renderStrategyEvaluation(history);
-  return;
- }
-
- var complete={
-  1:{w:0,l:0},
-  4:{w:0,l:0},
-  16:{w:0,l:0}
- };
-
- history.forEach(function(x){
-  [1,4,16].forEach(function(h){
-   var z=x["h"+h];
-
-   if(z){
-    if(z.win)complete[h].w++;
-    else complete[h].l++;
-   }
-  });
- });
-
- $("historySummary").textContent=
-  "کل سیگنال‌های استراتژی: "+history.length+
-  " | ۱۵ دقیقه: "+complete[1].w+" مثبت / "+complete[1].l+" منفی"+
-  " | ۱ ساعت: "+complete[4].w+" مثبت / "+complete[4].l+" منفی"+
-  " | ۴ ساعت: "+complete[16].w+" مثبت / "+complete[16].l+" منفی";
-
- history.slice().reverse().slice(0,40).forEach(function(x){
-  var tr=document.createElement("tr");
-
-  [
-   x.symbol,x.strategy,x.direction,fmt(x.entry),
-   outcomeText(x.h1),outcomeText(x.h4),outcomeText(x.h16)
-  ].forEach(function(v,j){
-   var td=document.createElement("td");
-   td.textContent=v;
-
-   var h=[1,4,16][j-4];
-
-   if(j>=4&&x["h"+h]){
-    td.className=x["h"+h].win?"green":"red";
-   }
-
-   tr.appendChild(td);
-  });
-
-  body.appendChild(tr);
- });
-
- renderStrategyEvaluation(history);
+function outcomeText(outcome){
+ if(!outcome)return "در انتظار";
+ var net=outcomeNet(outcome);
+ if(net===null)return "هزینه نامعتبر";
+ var late=outcome.lateMinutes>15?" †":"";
+ return (net>0?"+":"")+net.toFixed(2)+"٪"+late;
 }
 
 function renderStrategyEvaluation(history){
@@ -1256,238 +1095,260 @@ function renderStrategyEvaluation(history){
 
  names.forEach(function(name){
   [1,4,16].forEach(function(h){
-   var list=history.filter(function(x){
-    return x.strategy===name&&x["h"+h];
+   var key="h"+h;
+   var list=history.filter(function(item){
+    return item.strategy===name&&item[key]!==null;
+   });
+   var wins=0,losses=0,sum=0,validCount=0;
+
+   list.forEach(function(item){
+    var net=outcomeNet(item[key]);
+    if(net===null)return;
+    validCount++;
+    sum+=net;
+    if(net>0)wins++;else losses++;
    });
 
-   var wins=list.filter(function(x){
-    return x["h"+h].win;
-   }).length;
-
-   var losses=list.length-wins;
-
-   var avg=list.length?
-    list.reduce(function(s,x){return s+x["h"+h].net},0)/list.length:null;
-
-   var rate=list.length?wins/list.length*100:null;
+   var rate=validCount?wins/validCount*100:null;
+   var average=validCount?sum/validCount:null;
+   var values=[
+    name,h===1?"۱۵ دقیقه":h===4?"۱ ساعت":"۴ ساعت",
+    String(validCount),String(wins),String(losses),
+    rate===null?"-":rate.toFixed(1)+"٪",
+    average===null?"-":(average>0?"+":"")+average.toFixed(2)+"٪"
+   ];
 
    var tr=document.createElement("tr");
-
-   [
-    name,
-    h===1?"۱۵ دقیقه":h===4?"۱ ساعت":"۴ ساعت",
-    String(list.length),
-    String(wins),
-    String(losses),
-    rate===null?"-":rate.toFixed(1)+"٪",
-    avg===null?"-":(avg>0?"+":"")+avg.toFixed(2)+"٪"
-   ].forEach(function(v){
+   values.forEach(function(value){
     var td=document.createElement("td");
-    td.textContent=v;
+    td.textContent=value;
     tr.appendChild(td);
    });
-
    body.appendChild(tr);
   });
  });
 }
 
-function showDetails(symbol,result){
- $("selectedSymbol").textContent=symbol;
+function renderHistory(){
+ var history=readHistory();
+ var body=$("historyResults");
+ body.innerHTML="";
 
- $("selectedScore").textContent=
-  "امتیاز "+result.score+"/10 | مثبت "+result.buys+" | منفی "+result.sells;
+ if(!history.length){
+  body.innerHTML="<tr><td colspan='7'>هنوز سیگنالی ثبت نشده است</td></tr>";
+  safeText($("historySummary"),"هنوز سیگنالی ثبت نشده است.");
+  renderStrategyEvaluation(history);
+  return;
+ }
 
- $("detailResults").innerHTML="";
+ var summary={1:{w:0,l:0},4:{w:0,l:0},16:{w:0,l:0}};
+ history.forEach(function(item){
+  [1,4,16].forEach(function(h){
+   var value=item["h"+h];
+   if(!value)return;
+   var net=outcomeNet(value);
+   if(net===null)return;
+   if(net>0)summary[h].w++;else summary[h].l++;
+  });
+ });
 
- result.signals.forEach(function(s,i){
+ safeText($("historySummary"),
+  "کل سیگنال‌ها: "+history.length+
+  " | ۱۵ دقیقه: "+summary[1].w+" مثبت / "+summary[1].l+" منفی"+
+  " | ۱ ساعت: "+summary[4].w+" مثبت / "+summary[4].l+" منفی"+
+  " | ۴ ساعت: "+summary[16].w+" مثبت / "+summary[16].l+" منفی"+
+  " | هزینه رفت‌وبرگشت فعلی: "+(roundTripCost()===null?"نامعتبر":roundTripCost().toFixed(3)+"٪")
+ );
+
+ history.slice().reverse().slice(0,60).forEach(function(item){
   var tr=document.createElement("tr");
+  var values=[
+   item.symbol,item.strategy,item.direction,fmt(item.entry),
+   outcomeText(item.h1),outcomeText(item.h4),outcomeText(item.h16)
+  ];
 
-  [
-   names[i],
-   s.signal===1?"مثبت":s.signal===-1?"منفی":"خنثی",
-   s.reason
-  ].forEach(function(v,j){
+  values.forEach(function(value,index){
    var td=document.createElement("td");
-   td.textContent=v;
-
-   if(j===1){
-    td.className=s.signal===1?"green":s.signal===-1?"red":"yellow";
+   td.textContent=value;
+   var h=[1,4,16][index-4];
+   if(index>=4&&item["h"+h]){
+    var net=outcomeNet(item["h"+h]);
+    td.className=net===null?"yellow":net>0?"green":"red";
    }
-
    tr.appendChild(td);
   });
+  body.appendChild(tr);
+ });
 
-  $("detailResults").appendChild(tr);
+ renderStrategyEvaluation(history);
+}
+
+function showDetails(symbol,analysis){
+ safeText($("selectedSymbol"),symbol);
+ safeText($("selectedScore"),
+  "امتیاز "+analysis.score+"/10 | مثبت "+analysis.buys+" | منفی "+analysis.sells
+ );
+ var body=$("detailResults");
+ body.innerHTML="";
+
+ analysis.signals.forEach(function(signal,index){
+  var tr=document.createElement("tr");
+  var values=[
+   names[index],
+   signal.signal===1?"مثبت":signal.signal===-1?"منفی":"خنثی",
+   signal.reason
+  ];
+  values.forEach(function(value,j){
+   var td=document.createElement("td");
+   td.textContent=value;
+   if(j===1)td.className=signal.signal===1?"green":signal.signal===-1?"red":"yellow";
+   tr.appendChild(td);
+  });
+  body.appendChild(tr);
  });
 }
 
 function renderResults(){
  var body=$("marketResults");
  body.innerHTML="";
-
- results.sort(function(a,b){
-  return Math.abs(b.score)-Math.abs(a.score);
- });
+ results.sort(function(a,b){return Math.abs(b.score)-Math.abs(a.score)});
 
  if(!results.length){
   body.innerHTML="<tr><td colspan='5'>نتیجه جدیدی ثبت نشده است</td></tr>";
-  $("strongCount").textContent="۰";
+  safeText($("strongCount"),"۰");
   return;
  }
 
- results.forEach(function(r){
+ results.forEach(function(result){
   var tr=document.createElement("tr");
   tr.setAttribute("data-select","1");
 
   [
-   r.symbol,
-   fmt(r.price),
-   r.score+"/10",
-   r.buys+" مثبت / "+r.sells+" منفی",
-   r.decision
-  ].forEach(function(v,j){
+   result.symbol,fmt(result.price),result.score+"/10",
+   result.buys+" مثبت / "+result.sells+" منفی",result.decision
+  ].forEach(function(value,index){
    var td=document.createElement("td");
-   td.textContent=v;
-
-   if(j===4){
-    td.className=
-     r.decision==="تمایل صعودی قوی"?"green":
-     r.decision==="تمایل نزولی قوی"?"red":"yellow";
+   td.textContent=value;
+   if(index===4){
+    td.className=result.decision==="تمایل صعودی قوی"?"green":
+     result.decision==="تمایل نزولی قوی"?"red":"yellow";
    }
-
    tr.appendChild(td);
   });
 
   tr.addEventListener("click",function(){
-   showDetails(r.symbol,r.analysis);
+   showDetails(result.symbol,result.analysis);
   });
-
   body.appendChild(tr);
  });
 
- var strong=results.filter(function(x){
-  return x.decision!=="بدون سیگنال قوی";
+ var strong=results.filter(function(item){
+  return item.decision!=="بدون سیگنال قوی";
  }).length;
-
- $("strongCount").textContent=String(strong);
-
+ safeText($("strongCount"),strong);
  showDetails(results[0].symbol,results[0].analysis);
 }
 
-function showQuality(a,item){
- var q=a.quality;
+function showQuality(data,item){
+ var q=data.quality;
+ lastQuality=q;
 
- $("qualityStatus").textContent=
-  q.valid?"کنترل‌های اولیه قابل قبول":"نیازمند بررسی";
+ safeText($("qualityStatus"),q.valid?"کنترل‌های کیفیت قابل قبول":"نیازمند بررسی");
+ $("qualityStatus").className="value "+(q.valid?"green":"yellow");
 
- $("qualityStatus").className=
-  "value "+(q.valid?"green":"yellow");
+ safeText($("qualityDetail"),
+  "کندل بسته‌شده: "+q.count+
+  " | فاصله زمانی: "+q.gaps+
+  " | تکراری: "+q.duplicates+
+  " | ردیف نامعتبر: "+q.invalidRows+
+  " | جهش ۵۰٪ یا بیشتر: "+q.jumps+
+  " | عمر آخرین کندل: "+q.ageMinutes.toFixed(1)+" دقیقه"
+ );
 
- $("qualityDetail").textContent=
-  "کندل معتبر: "+q.count+
-  " | فاصله زمانی غیرمعمول: "+q.gaps+
-  " | جهش غیرمعمول: "+q.jumps+
-  " | عمر آخرین کندل: "+q.ageMinutes.toFixed(1)+" دقیقه";
-
- $("unitDetail").textContent=
+ safeText($("unitDetail"),
   "قیمت خام آمار بازار: "+fmt(item.price)+
-  " | آخرین بسته‌شدن کندل: "+fmt(a.c[a.c.length-1])+
-  " | مقایسه مستقیم غیرفعال؛ واحد و مقیاس هنوز مستقل تأیید نشده است.";
+  " | آخرین بسته‌شدن کندل: "+fmt(data.c[data.c.length-1])+
+  " | مقایسه مستقیم غیرفعال؛ واحد و مقیاس مستقل تأیید نشده است."
+ );
 
- if(q.warnings.length){
-  log("هشدار کیفیت "+item.symbol+": "+q.warnings.join("، "),"yellow");
- }
+ if(q.warnings.length)log("هشدار کیفیت "+item.symbol+": "+q.warnings.join("؛ "),"yellow");
 }
 
 /* اجرای تحلیل */
 async function startScan(){
  if(busy)return;
+ if(!costsValid()){
+  log("هزینه واردشده نامعتبر است؛ مقدار هر ورودی باید بین صفر تا ۵ باشد.","red");
+  safeText($("finalStatus"),"تنظیم هزینه نامعتبر");
+  return;
+ }
 
  busy=true;
  stopRequested=false;
  results=[];
-
- $("marketResults").innerHTML="";
- $("scannedCount").textContent="۰";
- $("strongCount").textContent="۰";
+ var attempted=0,successful=0,skipped=0,errors=0,invalid=0;
+ var candleSuccess=0;
 
  $("scanBtn").disabled=true;
  $("marketBtn").disabled=true;
-
- $("finalStatus").textContent="در حال تحلیل";
+ safeText($("scannedCount"),"۰");
+ safeText($("errorCount"),"۰");
+ safeText($("strongCount"),"۰");
+ safeText($("finalStatus"),"در حال تحلیل");
  $("finalStatus").className="value yellow";
-
- log("شروع تحلیل Read-only نسخه V12.");
+ log("شروع تحلیل Read-only نسخه V13.");
 
  try{
   if(!markets.length)await getMarkets();
-
   var total=markets.length;
-
   if(!total)throw new Error("بازار قابل تحلیل وجود ندارد");
-
-  var attempted=0;
-  var successful=0;
-  var skipped=0;
-  var errors=0;
-  var invalid=0;
 
   for(var i=0;i<total;i++){
    if(stopRequested){
-    log("توقف تحلیل درخواست شد","yellow");
+    log("توقف تحلیل درخواست شد.","yellow");
     break;
    }
 
    var item=markets[i];
    attempted++;
-
-   progress(
-    (i/total)*100,
-    "تحلیل "+(i+1)+" از "+total+": "+item.symbol
-   );
+   progress(i/total*100,"تحلیل "+(i+1)+" از "+total+": "+item.symbol);
 
    try{
     var candles=await getCandles(item);
+    candleSuccess++;
+    setCandleApi("پاسخ دریافت شد",
+     candleSuccess+" بازار با پاسخ کندل؛ خطاها جداگانه ثبت می‌شوند.","green");
 
     showQuality(candles,item);
 
-    /*
-    ابتدا ارزیابی سیگنال‌های قبلی،
-    سپس بررسی تکراری بودن کندل.
-    */
-    updateHistory(item.symbol,candles);
-
     if(!candles.quality.valid){
      invalid++;
-     log(item.symbol+": به دلیل کیفیت نامعتبر وارد تحلیل نشد.","yellow");
+     log(item.symbol+": کیفیت داده برای تحلیل کافی نیست؛ بازار رد شد.","yellow");
     }else{
+     /* اول ارزیابی سیگنال‌های قدیمی */
+     updateHistory(item.symbol,candles);
+
      var lastTime=candles.t[candles.t.length-1];
      var processed=readProcessed();
 
      if(Number(processed[item.symbol])===Number(lastTime)){
       skipped++;
-      log(item.symbol+": کندل جدیدی برای تحلیل وجود ندارد.","yellow");
+      log(item.symbol+": کندل بسته‌شده جدیدی ندارد.","yellow");
      }else{
       var analysis=analyze(candles);
-
       recordSignals(item.symbol,candles,analysis);
 
       processed[item.symbol]=Number(lastTime);
       saveProcessed(processed);
 
       results.push({
-       symbol:item.symbol,
-       price:analysis.price,
-       score:analysis.score,
-       buys:analysis.buys,
-       sells:analysis.sells,
-       decision:analysis.decision,
+       symbol:item.symbol,price:analysis.price,
+       score:analysis.score,buys:analysis.buys,
+       sells:analysis.sells,decision:analysis.decision,
        analysis:analysis
       });
 
       successful++;
-
       log(item.symbol+" تحلیل شد؛ "+analysis.score+"/10","green");
      }
     }
@@ -1497,69 +1358,66 @@ async function startScan(){
     log(item.symbol+": "+error.message,"red");
    }
 
-   $("scannedCount").textContent=String(successful);
-
+   safeText($("scannedCount"),successful);
+   safeText($("errorCount"),errors);
    renderResults();
    renderHistory();
 
-   progress(
-    attempted/total*100,
+   progress(attempted/total*100,
     "تلاش "+attempted+"/"+total+
-    " | موفق "+successful+
+    " | تحلیل جدید "+successful+
     " | تکراری "+skipped+
     " | داده نامعتبر "+invalid+
     " | خطا "+errors
    );
+   await sleep(300);
+  }
 
-   await sleep(350);
+  if(candleSuccess===0){
+   setCandleApi("خطا","هیچ پاسخ کندل معتبری دریافت نشد.","red");
+  }else{
+   setCandleApi("پاسخ دریافت شد",
+    candleSuccess+" بازار پاسخ کندل داد؛ موفقیت دریافت به معنی صحت کامل داده نیست.","green");
   }
 
   progress(100,stopRequested?"تحلیل متوقف شد":"تحلیل پایان یافت");
+  safeText($("finalStatus"),stopRequested?"تحلیل متوقف شد":
+   successful?"تحلیل پایان یافت":"بدون تحلیل جدید");
+  $("finalStatus").className="value "+(successful?"green":"yellow");
 
-  $("finalStatus").textContent=
-   stopRequested?"تحلیل متوقف شد":
-   successful?"تحلیل پایان یافت":"بدون نتیجه معتبر";
-
-  $("finalStatus").className=
-   "value "+(successful?"green":"yellow");
-
-  $("finalDetail").textContent=
+  safeText($("finalDetail"),
    "تلاش: "+attempted+
    " | تحلیل جدید: "+successful+
    " | تکراری: "+skipped+
    " | داده نامعتبر: "+invalid+
    " | خطا: "+errors+
-   " | هزینه رفت‌وبرگشت فرضی: "+roundTripCost().toFixed(3)+"٪";
-
+   " | هزینه رفت‌وبرگشت فرضی: "+roundTripCost().toFixed(3)+"٪"
+  );
   log("پایان تحلیل؛ هیچ سفارشی ثبت نشده است.","green");
 
  }catch(error){
-  $("finalStatus").textContent="خطا";
+  safeText($("finalStatus"),"خطا");
   $("finalStatus").className="value red";
-  $("finalDetail").textContent=error.message;
-
+  safeText($("finalDetail"),error.message);
   log("خطای موتور: "+error.message,"red");
 
  }finally{
   busy=false;
   $("scanBtn").disabled=false;
   $("marketBtn").disabled=false;
+  renderHistory();
  }
 }
 
 async function refreshMarkets(){
  if(busy)return;
-
  $("marketBtn").disabled=true;
-
  try{
   markets=[];
   await getMarkets();
-
  }catch(error){
   setApi("خطا",classifyFetchError(error),"red");
-  log("خطای دریافت فهرست بازارها: "+error.message,"red");
-
+  log("خطای فهرست بازارها: "+error.message,"red");
  }finally{
   $("marketBtn").disabled=false;
  }
@@ -1567,26 +1425,34 @@ async function refreshMarkets(){
 
 $("scanBtn").addEventListener("click",startScan);
 $("marketBtn").addEventListener("click",refreshMarkets);
-
 $("stopBtn").addEventListener("click",function(){
  if(busy){
   stopRequested=true;
-  log("درخواست توقف ارسال شد","yellow");
+  log("درخواست توقف ثبت شد؛ پس از پایان درخواست جاری متوقف می‌شود.","yellow");
  }
 });
 
-$("feeInput").addEventListener("change",function(){
+function onCostChange(){
+ if(!costsValid()){
+  safeText($("costInfo"),"ورودی نامعتبر است؛ هر مقدار باید بین صفر تا ۵ درصد باشد.");
+  $("costInfo").className="small red";
+ }else{
+  safeText($("costInfo"),
+   "هزینه رفت‌وبرگشت: "+roundTripCost().toFixed(3)+
+   "٪ | تغییر هزینه‌ها، بازده خالص تمام ارزیابی‌های ذخیره‌شده را با فرض جدید بازنمایی می‌کند."
+  );
+  $("costInfo").className="small yellow";
+ }
  renderHistory();
-});
-
-$("slippageInput").addEventListener("change",function(){
- renderHistory();
-});
+}
+$("feeInput").addEventListener("input",onCostChange);
+$("slippageInput").addEventListener("input",onCostChange);
 
 renderStrategies();
 renderHistory();
+onCostChange();
 
-log("V12 آماده است؛ فقط دریافت اطلاعات عمومی و تحلیل.");
+log("V13 آماده است؛ فقط دریافت عمومی و تحلیل.");
 refreshMarkets();
 
 })();

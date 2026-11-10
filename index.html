@@ -4,518 +4,397 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAHORA AI V15</title>
+<title>MAHORA AI V17</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b1020;color:#e8edf8;font-family:Tahoma,Arial,sans-serif}
-header{padding:18px;background:#111a30;border-bottom:1px solid #26334e}
+body{margin:0;background:#0a1020;color:#e9efff;font-family:Tahoma,Arial,sans-serif}
+header{background:#111b31;padding:18px;border-bottom:1px solid #293a59}
 h1{margin:0;color:#65e0b0;font-size:23px}
-.sub{color:#9ba9c2;font-size:12px;margin-top:7px}
-main{padding:14px;max-width:900px;margin:auto}
-.card{background:#131d33;border:1px solid #263653;border-radius:14px;padding:15px;margin-bottom:13px}
+main{max-width:950px;margin:auto;padding:13px}
+.card{background:#131e34;border:1px solid #293b5a;border-radius:13px;padding:14px;margin-bottom:13px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.price{font-size:25px;color:#65e0b0;font-weight:bold;direction:ltr}
-.muted{color:#91a0ba;font-size:12px}
-select,button{background:#1d2b46;color:white;border:1px solid #344968;padding:11px;border-radius:9px;font-size:14px}
-button{background:#087d61;border:0;font-weight:bold;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.stat{background:#1b2943;border-radius:9px;padding:11px}
+small,.muted{color:#9baac4;font-size:12px}
+strong{overflow-wrap:anywhere}
+.stat strong{display:block;margin-top:7px}
+.price{font-size:24px;color:#65e0b0;font-weight:bold}
+button,select{padding:11px;border:1px solid #3a4e70;border-radius:9px;background:#20314f;color:white;font-size:14px}
+button{cursor:pointer;background:#087b5d;border:0;font-weight:bold}
 button:disabled{opacity:.5}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.stat{background:#1a2740;padding:12px;border-radius:10px}
-.stat small{color:#9ba9c2}
-.stat strong{display:block;margin-top:8px;font-size:17px}
-.good{color:#65e0b0}.bad{color:#ff7777}.neutral{color:#ffc96b}
-.signal{font-size:23px;font-weight:bold;margin:10px 0}
+button.secondary{background:#293a58}
+button.danger{background:#9d3543}
+.good{color:#65e0b0}.bad{color:#ff7777}.warn{color:#ffcc72}
+.signal{font-size:21px;font-weight:bold;margin:12px 0}
 table{width:100%;border-collapse:collapse;font-size:12px}
-td,th{padding:10px 5px;border-bottom:1px solid #293650;text-align:center}
-th{color:#9ba9c2}
-.status{font-size:12px;padding:7px 10px;border-radius:20px;background:#24334c}
-footer{text-align:center;color:#7788a5;font-size:11px;padding:20px}
-#error{color:#ff8888;font-size:12px;line-height:1.8}
-#log{font-size:12px;line-height:2;color:#aab8d0;max-height:130px;overflow:auto}
-@media(max-width:420px){.grid{grid-template-columns:1fr}.price{font-size:21px}}
+td,th{padding:9px 5px;text-align:center;border-bottom:1px solid #293b58}
+th{color:#9eacc5}
+.scroll{overflow-x:auto}
+.status{padding:7px 10px;border-radius:20px;background:#253652;font-size:12px}
+input{accent-color:#16b88a}
+footer{text-align:center;color:#8291aa;font-size:11px;padding:20px}
+#err{font-size:12px;line-height:1.9;color:#ff9a9a}
+#logs{font-size:11px;line-height:2;max-height:120px;overflow:auto;color:#aebbd0}
+@media(max-width:430px){.grid{grid-template-columns:1fr}.price{font-size:20px}}
 </style>
 </head>
 <body>
-
 <header>
  <div class="row">
-  <div>
-   <h1>MAHORA AI V15</h1>
-   <div class="sub">هوش مصنوعی تحلیل بازار ارز دیجیتال</div>
-  </div>
-  <span class="status" id="connection">در حال اتصال...</span>
+  <div><h1>MAHORA AI V17</h1><small>Autonomous Paper Trading · Multi-Timeframe</small></div>
+  <span class="status" id="conn">در حال اتصال</span>
  </div>
 </header>
-
 <main>
-
  <section class="card">
   <div class="row">
-   <div>
-    <div class="muted">قیمت لحظه‌ای بازار</div>
-    <div class="price" id="price">---</div>
-    <div class="muted" id="priceTime">در انتظار دریافت قیمت</div>
-   </div>
-   <div>
-    <div class="muted">تغییرات ۲۴ ساعته</div>
-    <strong id="change">---</strong>
-   </div>
+   <div><small>قیمت لحظه‌ای</small><div class="price" id="price">---</div><small id="updated">---</small></div>
+   <div><small>تغییر ۲۴ ساعته</small><h3 id="change">---</h3></div>
   </div>
  </section>
 
  <section class="card">
   <div class="row">
-   <div>
-    <strong>انتخاب ارز</strong>
-    <div class="muted">بازارهای تومانی نوبیتکس</div>
-   </div>
+   <strong>بازار معاملاتی</strong>
    <select id="market">
     <option value="btc-rls">بیت‌کوین BTC</option>
     <option value="eth-rls">اتریوم ETH</option>
     <option value="xrp-rls">ریپل XRP</option>
     <option value="doge-rls">دوج‌کوین DOGE</option>
-    <option value="pepe-rls">پپه PEPE</option>
     <option value="bnb-rls">بایننس کوین BNB</option>
     <option value="sol-rls">سولانا SOL</option>
+    <option value="pepe-rls">پپه PEPE</option>
    </select>
   </div>
-  <div class="row" style="margin-top:13px">
-   <span class="muted">تایم‌فریم تحلیل</span>
-   <strong class="good">۱۵ دقیقه (15m)</strong>
-  </div>
-  <button id="scan" style="width:100%;margin-top:14px">اجرای تحلیل ۱۰ استراتژی</button>
- </section>
-
- <section class="card">
-  <strong>نتیجه تحلیل MAHORA AI</strong>
-  <div class="signal neutral" id="signal">در انتظار تحلیل</div>
-  <div class="muted" id="signalDetail">برای شروع، دکمه تحلیل را بزنید.</div>
-  <div class="grid" style="margin-top:14px">
-   <div class="stat"><small>تعداد رأی خرید</small><strong class="good" id="buyVotes">0</strong></div>
-   <div class="stat"><small>تعداد رأی فروش</small><strong class="bad" id="sellVotes">0</strong></div>
-   <div class="stat"><small>قدرت سیگنال</small><strong id="strength">---</strong></div>
-   <div class="stat"><small>تعداد کندل بررسی‌شده</small><strong id="candleCount">0</strong></div>
-  </div>
- </section>
-
- <section class="card">
-  <strong>۱۰ ماژول تحلیل ۱۵ دقیقه‌ای</strong>
-  <div style="overflow-x:auto;margin-top:10px">
-   <table>
-    <thead><tr><th>استراتژی</th><th>نتیجه</th><th>مقدار</th></tr></thead>
-    <tbody id="strategies">
-     <tr><td colspan="3">هنوز تحلیلی انجام نشده است.</td></tr>
-    </tbody>
-   </table>
-  </div>
- </section>
-
- <section class="card">
-  <strong>وضعیت سیستم</strong>
   <div class="grid" style="margin-top:12px">
-   <div class="stat"><small>آخرین قیمت</small><strong id="lastPrice">---</strong></div>
-   <div class="stat"><small>آخرین کندل</small><strong id="lastCandle">---</strong></div>
-   <div class="stat"><small>سرمایه آزمایشی</small><strong>۱۰,۰۰۰,۰۰۰ تومان</strong></div>
-   <div class="stat"><small>وضعیت معامله واقعی</small><strong class="bad">غیرفعال</strong></div>
+   <div class="stat"><small>تایم‌فریم اول</small><strong>۵ دقیقه</strong></div>
+   <div class="stat"><small>تایم‌فریم دوم</small><strong>۱۵ دقیقه</strong></div>
+   <div class="stat"><small>تایم‌فریم سوم</small><strong>۱ ساعت</strong></div>
+   <div class="stat"><small>تعداد استراتژی</small><strong>۱۰ برای هر تایم‌فریم</strong></div>
+  </div>
+  <button id="scan" style="width:100%;margin-top:12px">تحلیل هر سه تایم‌فریم</button>
+ </section>
+
+ <section class="card">
+  <strong>تصمیم موتور MAHORA</strong>
+  <div class="signal warn" id="signal">در انتظار تحلیل</div>
+  <div class="muted" id="detail">برای دریافت داده و تحلیل، دکمه را بزنید.</div>
+  <div class="grid" style="margin-top:12px">
+   <div class="stat"><small>رأی خرید</small><strong class="good" id="buys">0</strong></div>
+   <div class="stat"><small>رأی فروش</small><strong class="bad" id="sells">0</strong></div>
+   <div class="stat"><small>توافق تایم‌فریم‌ها</small><strong id="agreement">---</strong></div>
+   <div class="stat"><small>آخرین کندل ۱۵ دقیقه</small><strong id="lastcandle">---</strong></div>
   </div>
  </section>
 
  <section class="card">
-  <strong>گزارش اتصال و خطا</strong>
-  <div id="error">در حال بررسی اتصال به نوبیتکس...</div>
-  <div id="log"></div>
+  <strong>نتایج سه تایم‌فریم</strong>
+  <div class="scroll">
+   <table><thead><tr><th>تایم‌فریم</th><th>خرید</th><th>فروش</th><th>خنثی</th><th>نتیجه</th></tr></thead>
+   <tbody id="tfresults"><tr><td colspan="5">هنوز تحلیلی انجام نشده است.</td></tr></tbody></table>
+  </div>
  </section>
 
- <footer>
-  MAHORA AI V15 · تحلیل آزمایشی · فقط تایم‌فریم ۱۵ دقیقه
-  <br><br>
-  این سیستم تضمین سود نیست. سیگنال‌ها باید قبل از هر استفاده‌ای آزمایش شوند.
- </footer>
+ <section class="card">
+  <strong>۱۰ استراتژی آخرین تایم‌فریم ۱۵ دقیقه</strong>
+  <div class="scroll"><table>
+   <thead><tr><th>استراتژی</th><th>نتیجه</th><th>مقدار</th></tr></thead>
+   <tbody id="strategies"><tr><td colspan="3">---</td></tr></tbody>
+  </table></div>
+ </section>
+
+ <section class="card">
+  <div class="row"><strong>Auto Trading آزمایشی</strong><span class="status warn">فقط Paper</span></div>
+  <p class="muted">ربات فقط وقتی هر سه تایم‌فریم هم‌جهت باشند، معامله آزمایشی باز می‌کند. حد سود و ضرر براساس ATR محاسبه می‌شود.</p>
+  <div class="row">
+   <label><input type="checkbox" id="auto"> فعال‌سازی معاملات خودکار آزمایشی</label>
+   <button class="danger" id="stop">توقف اضطراری</button>
+  </div>
+  <div class="grid" style="margin-top:12px">
+   <div class="stat"><small>سرمایه آزمایشی</small><strong id="capital">۱۰,۰۰۰,۰۰۰ تومان</strong></div>
+   <div class="stat"><small>ارزش معاملات باز</small><strong id="exposure">۰ تومان</strong></div>
+   <div class="stat"><small>سود و زیان بسته‌شده</small><strong id="pnl">۰ تومان</strong></div>
+   <div class="stat"><small>معاملات باز</small><strong id="openCount">۰</strong></div>
+  </div>
+ </section>
+
+ <section class="card">
+  <div class="row"><strong>معاملات باز آزمایشی</strong><button class="secondary" id="closeAll">بستن همه معاملات</button></div>
+  <div class="scroll"><table>
+   <thead><tr><th>جهت</th><th>ورود</th><th>حد ضرر</th><th>حد سود</th><th>وضعیت</th></tr></thead>
+   <tbody id="positions"><tr><td colspan="5">معامله بازی وجود ندارد.</td></tr></tbody>
+  </table></div>
+ </section>
+
+ <section class="card">
+  <strong>تاریخچه معاملات</strong>
+  <div class="scroll"><table>
+   <thead><tr><th>جهت</th><th>قیمت ورود</th><th>قیمت خروج</th><th>سود/زیان</th><th>علت خروج</th></tr></thead>
+   <tbody id="history"><tr><td colspan="5">تاریخچه خالی است.</td></tr></tbody>
+  </table></div>
+ </section>
+
+ <section class="card">
+  <strong>وضعیت و گزارش سیستم</strong>
+  <div id="err">در انتظار اتصال</div><div id="logs"></div>
+ </section>
+ <footer>MAHORA AI V17 · Paper Trading · بدون معامله واقعی<br>هیچ استراتژی سود یا نرخ برد مشخصی را تضمین نمی‌کند.</footer>
 </main>
 
 <script>
 "use strict";
+const API="https://apiv2.nobitex.ir";
+const START_CAPITAL=10000000;
+const FEE_RATE=0.001;
+const MAX_RISK=0.02;
+const MAX_OPEN=3;
+const MAX_EXPOSURE=0.30;
+const FRAMES=[{name:"۵ دقیقه",res:5,sec:300},{name:"۱۵ دقیقه",res:15,sec:900},{name:"۱ ساعت",res:60,sec:3600}];
 
-const API = "https://apiv2.nobitex.ir";
-const REFRESH_MS = 15000;
-const CANDLE_LIMIT = 180;
+let priceRial=null,priceToman=null,stats=null,busy=false;
+let analyses={};
+let positions=load("mh_positions",[]);
+let history=load("mh_history",[]);
+let capital=load("mh_capital",START_CAPITAL);
+let autoEnabled=load("mh_auto",false);
+let lastProcessed={};
 
-let currentPrice = null;
-let candles = [];
-let lastStats = null;
-let busy = false;
-let timer = null;
-
-const $ = id => document.getElementById(id);
-
-function log(message){
- const el=$("log");
- const time=new Date().toLocaleTimeString("fa-IR");
- el.innerHTML = `${time} - ${message}<br>` + el.innerHTML;
+const $=id=>document.getElementById(id);
+function load(k,d){try{let v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}}
+function save(){
+ localStorage.setItem("mh_positions",JSON.stringify(positions));
+ localStorage.setItem("mh_history",JSON.stringify(history.slice(0,100)));
+ localStorage.setItem("mh_capital",JSON.stringify(capital));
+ localStorage.setItem("mh_auto",JSON.stringify(autoEnabled));
 }
-
-function setError(message){
- $("error").textContent=message;
-}
-
-function formatPrice(value){
- if(!Number.isFinite(Number(value))) return "---";
- return Number(value).toLocaleString("fa-IR",{maximumFractionDigits:2});
-}
-
-function marketName(){
- return $("market").value;
-}
-
+function log(s){$("logs").innerHTML=new Date().toLocaleTimeString("fa-IR")+" - "+s+"<br>"+$("logs").innerHTML}
+function err(s){$("err").textContent=s}
+function fmt(n,d=0){return Number(n||0).toLocaleString("fa-IR",{maximumFractionDigits:d})}
+function market(){return $("market").value}
+function symbol(){return market().split("-")[0].toUpperCase()+"IRT"}
 async function getJSON(url){
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),12000);
- try{
-  const response=await fetch(url,{
-   method:"GET",
-   cache:"no-store",
-   signal:controller.signal
-  });
-  if(!response.ok) throw new Error("HTTP "+response.status);
-  return await response.json();
- }finally{
-  clearTimeout(timeout);
- }
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+ try{let r=await fetch(url,{cache:"no-store",signal:c.signal});if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}
+ finally{clearTimeout(t)}
 }
-
 function extractStats(data){
- if(!data) return null;
- const key=marketName();
- const stats=data.stats || data;
- return stats[key] || stats[key.toUpperCase()] || null;
+ const s=data.stats||data,k=market();
+ return s[k]||s[k.toUpperCase()]||null;
 }
-
-function updatePriceUI(stats){
- if(!stats) throw new Error("اطلاعات قیمت این بازار در پاسخ API پیدا نشد.");
-
- const price=Number(stats.latest || stats.lastTradePrice || stats.close);
- if(!Number.isFinite(price) || price<=0){
-  throw new Error("قیمت دریافتی معتبر نیست.");
- }
-
- currentPrice=price;
- lastStats=stats;
-
- // قیمت بازار نوبیتکس برای بازار RLS معمولاً ریال است.
- // برای نمایش تومان بر ۱۰ تقسیم می‌شود.
- $("price").textContent=formatPrice(price/10)+" تومان";
- $("lastPrice").textContent=formatPrice(price/10)+" تومان";
- $("priceTime").textContent="آخرین دریافت: "+new Date().toLocaleTimeString("fa-IR");
-
- const change=Number(stats.dayChange ?? stats.change ?? 0);
- $("change").textContent=Number.isFinite(change)?change.toFixed(2)+"٪":"---";
- $("change").className=change>=0?"good":"bad";
- $("connection").textContent="اتصال قیمت برقرار";
- $("connection").style.color="#65e0b0";
-}
-
-async function fetchLivePrice(){
+async function refreshPrice(){
  try{
   const data=await getJSON(API+"/market/stats?dstCurrency=rls");
-  const stats=extractStats(data);
-  updatePriceUI(stats);
-  setError("اتصال قیمت زنده برقرار است.");
+  stats=extractStats(data);
+  if(!stats)throw Error("بازار در پاسخ API پیدا نشد");
+  priceRial=Number(stats.latest||stats.lastTradePrice||stats.close);
+  if(!Number.isFinite(priceRial)||priceRial<=0)throw Error("قیمت نامعتبر");
+  priceToman=priceRial/10;
+  $("price").textContent=fmt(priceToman,2)+" تومان";
+  $("updated").textContent="آخرین دریافت: "+new Date().toLocaleTimeString("fa-IR");
+  let ch=Number(stats.dayChange??stats.change??0);
+  $("change").textContent=ch.toFixed(2)+"٪";
+  $("change").className=ch>=0?"good":"bad";
+  $("conn").textContent="اتصال قیمت برقرار";
+  $("conn").className="status good";
+  updateOpenPositions();
   return true;
- }catch(error){
-  $("connection").textContent="خطای اتصال قیمت";
-  $("connection").style.color="#ff7777";
-  setError("دریافت قیمت ناموفق: "+error.message+
-   " | ممکن است شبکه، API یا محدودیت مرورگر مانع اتصال شده باشد.");
-  log("خطای قیمت: "+error.message);
+ }catch(e){
+  $("conn").textContent="خطای اتصال";
+  $("conn").className="status bad";
+  err("خطای قیمت: "+e.message+"؛ داده قبلی ممکن است قدیمی باشد.");
+  log("قیمت: "+e.message);
   return false;
  }
 }
-
-function getUdfSymbol(){
- const parts=marketName().split("-");
- return parts[0].toUpperCase()+"IRT";
-}
-
-async function fetchCandles(){
+async function candles(frame){
  const now=Math.floor(Date.now()/1000);
- const from=now-(CANDLE_LIMIT*15*60);
- const symbol=getUdfSymbol();
- const url=API+"/market/udf/history?symbol="+encodeURIComponent(symbol)+
-  "&resolution=15&from="+from+"&to="+now;
-
- const data=await getJSON(url);
-
- if(data.s!=="ok" || !Array.isArray(data.c) || !data.c.length){
-  throw new Error("کندل ۱۵ دقیقه‌ای دریافت نشد: "+(data.s||"پاسخ نامعتبر"));
+ const from=now-frame.sec*220;
+ const url=API+"/market/udf/history?symbol="+encodeURIComponent(symbol())+
+  "&resolution="+frame.res+"&from="+from+"&to="+now;
+ const d=await getJSON(url);
+ if(d.s!=="ok"||!Array.isArray(d.c))throw Error("دریافت کندل "+frame.name+" ناموفق");
+ let out=[];
+ for(let i=0;i<d.c.length;i++){
+  let x={t:+d.t[i],o:+d.o[i],h:+d.h[i],l:+d.l[i],c:+d.c[i],v:+(d.v?.[i]||0)};
+  if(Object.values(x).every(Number.isFinite)&&x.c>0&&x.t+frame.sec<=now)out.push(x);
  }
-
- const result=[];
- for(let i=0;i<data.c.length;i++){
-  const c={
-   time:Number(data.t[i]),
-   open:Number(data.o[i]),
-   high:Number(data.h[i]),
-   low:Number(data.l[i]),
-   close:Number(data.c[i]),
-   volume:Number(data.v?.[i] || 0)
-  };
-  if(Object.values(c).every(Number.isFinite) && c.close>0){
-   result.push(c);
-  }
+ out.sort((a,b)=>a.t-b.t);
+ if(out.length<60)throw Error("کندل کافی برای "+frame.name+" موجود نیست");
+ return out;
+}
+function sma(a,p){if(a.length<p)return null;return a.slice(-p).reduce((x,y)=>x+y,0)/p}
+function ema(a,p){
+ if(a.length<p)return null;
+ let v=a.slice(0,p).reduce((x,y)=>x+y,0)/p,k=2/(p+1);
+ for(let i=p;i<a.length;i++)v=a[i]*k+v*(1-k);
+ return v;
+}
+function rsi(a,p=14){
+ if(a.length<=p)return null;
+ let g=0,l=0;
+ for(let i=a.length-p;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)g+=d;else l-=d}
+ if(l===0)return 100;
+ return 100-100/(1+(g/p)/(l/p));
+}
+function atr(a,p=14){
+ if(a.length<p+1)return null;
+ let tr=[];
+ for(let i=a.length-p;i<a.length;i++){
+  let x=a[i],q=a[i-1];
+  tr.push(Math.max(x.h-x.l,Math.abs(x.h-q.c),Math.abs(x.l-q.c)));
  }
-
- candles=result;
- $("candleCount").textContent=result.length;
- $("lastCandle").textContent=result.length?
-  new Date(result[result.length-1].time*1000).toLocaleTimeString("fa-IR"):"---";
-
- if(result.length<50){
-  throw new Error("تعداد کندل‌ها برای تحلیل کافی نیست.");
- }
- return result;
+ return tr.reduce((x,y)=>x+y,0)/p;
 }
-
-function sma(values,period){
- if(values.length<period) return null;
- const part=values.slice(-period);
- return part.reduce((a,b)=>a+b,0)/period;
+function analyze(data){
+ const c=data.map(x=>x.c),last=c.at(-1),prev=c.at(-2);
+ const e9=ema(c,9),e21=ema(c,21),e50=ema(c,50);
+ const r=rsi(c),m=ema(c,12)-ema(c,26);
+ const mid=sma(c,20),sd=Math.sqrt(data.slice(-20).reduce((s,x)=>s+(x.c-mid)**2,0)/20);
+ const upper=mid+2*sd,lower=mid-2*sd;
+ const recent=data.slice(-14),hi=Math.max(...recent.map(x=>x.h)),lo=Math.min(...recent.map(x=>x.l));
+ const st=hi===lo?50:(last-lo)/(hi-lo)*100;
+ const avgVol=sma(data.map(x=>x.v),20),vol=data.at(-1).v;
+ const momentum=last-c.at(-5);
+ const a=atr(data),candle=data.at(-1),range=candle.h-candle.l;
+ const bodyRatio=range?Math.abs(candle.c-candle.o)/range:0;
+ const resistance=Math.max(...data.slice(-21,-1).map(x=>x.h));
+ const support=Math.min(...data.slice(-21,-1).map(x=>x.l));
+ const raw=[
+  ["روند EMA",e9>e21&&e21>e50?"BUY":e9<e21&&e21<e50?"SELL":"WAIT",e9],
+  ["RSI",r>52&&r<70?"BUY":r<48&&r>30?"SELL":"WAIT",r],
+  ["MACD",m>0&&last>prev?"BUY":m<0&&last<prev?"SELL":"WAIT",m],
+  ["بولینگر",last>mid&&last<upper?"BUY":last<mid&&last>lower?"SELL":"WAIT",mid],
+  ["استوکاستیک",st>55&&st<80?"BUY":st<45&&st>20?"SELL":"WAIT",st],
+  ["شکست محدوده",last>resistance?"BUY":last<support?"SELL":"WAIT",resistance],
+  ["حجم",avgVol>0&&vol>avgVol*1.2&&last>prev?"BUY":avgVol>0&&vol>avgVol*1.2&&last<prev?"SELL":"WAIT",avgVol>0?vol/avgVol:0],
+  ["مومنتوم",momentum>0?"BUY":momentum<0?"SELL":"WAIT",momentum],
+  ["ATR",a/last<0.03&&a/last>0.001?(last>prev?"BUY":"SELL"):"WAIT",a],
+  ["ساختار کندل",bodyRatio>.6&&candle.c>candle.o?"BUY":bodyRatio>.6&&candle.c<candle.o?"SELL":"WAIT",bodyRatio]
+ ];
+ const valid=raw.filter(x=>x[1]!=="WAIT");
+ const buy=raw.filter(x=>x[1]==="BUY").length;
+ const sell=raw.filter(x=>x[1]==="SELL").length;
+ const direction=buy>=6&&buy>sell?"BUY":sell>=6&&sell>buy?"SELL":"WAIT";
+ return {buy,sell,wait:10-buy-sell,direction,atr:a,last,time:data.at(-1).t,raw};
 }
-
-function ema(values,period){
- if(values.length<period) return null;
- const k=2/(period+1);
- let result=values.slice(0,period).reduce((a,b)=>a+b,0)/period;
- for(let i=period;i<values.length;i++){
-  result=values[i]*k+result*(1-k);
- }
- return result;
-}
-
-function rsi(values,period=14){
- if(values.length<=period) return null;
- let gains=0,losses=0;
- for(let i=values.length-period;i<values.length;i++){
-  const diff=values[i]-values[i-1];
-  if(diff>0) gains+=diff;
-  else losses-=diff;
- }
- if(losses===0) return 100;
- const rs=(gains/period)/(losses/period);
- return 100-(100/(1+rs));
-}
-
-function macd(values){
- const fast=ema(values,12);
- const slow=ema(values,26);
- if(fast===null||slow===null) return null;
- return fast-slow;
-}
-
-function bollinger(values,period=20){
- const avg=sma(values,period);
- if(avg===null) return null;
- const part=values.slice(-period);
- const variance=part.reduce((sum,v)=>sum+Math.pow(v-avg,2),0)/period;
- const sd=Math.sqrt(variance);
- return {upper:avg+2*sd,lower:avg-2*sd,mid:avg};
-}
-
-function stochastic(data,period=14){
- if(data.length<period) return null;
- const part=data.slice(-period);
- const highest=Math.max(...part.map(c=>c.high));
- const lowest=Math.min(...part.map(c=>c.low));
- if(highest===lowest) return 50;
- return ((data[data.length-1].close-lowest)/(highest-lowest))*100;
-}
-
-function atr(data,period=14){
- if(data.length<period+1) return null;
- const trs=[];
- for(let i=data.length-period;i<data.length;i++){
-  const c=data[i],prev=data[i-1];
-  trs.push(Math.max(
-   c.high-c.low,
-   Math.abs(c.high-prev.close),
-   Math.abs(c.low-prev.close)
-  ));
- }
- return trs.reduce((a,b)=>a+b,0)/period;
-}
-
-function calculateStrategies(data){
- const close=data.map(c=>c.close);
- const last=close[close.length-1];
- const prev=close[close.length-2];
- const fast=ema(close,9);
- const slow=ema(close,21);
- const long=ema(close,50);
- const r=rsi(close);
- const m=macd(close);
- const b=bollinger(close);
- const st=stochastic(data);
- const a=atr(data);
- const volumeAvg=sma(data.map(c=>c.volume),20);
- const currentVolume=data[data.length-1].volume;
-
- const results=[];
-
- function add(name,condition,value){
-  results.push({
-   name,
-   vote:condition===true?"BUY":condition===false?"SELL":"WAIT",
-   value
-  });
- }
-
- // 1 - EMA trend
- add("روند EMA",fast>slow&&slow>long,
-  fast&&slow?((fast>slow&&slow>long)?"صعودی":"نزولی/نامشخص"):"نامشخص");
-
- // 2 - RSI
- add("شاخص RSI",r!==null&&r>50&&r<70,
-  r===null?"---":r.toFixed(1));
-
- // 3 - MACD
- add("MACD",m!==null&&m>0,
-  m===null?"---":m.toFixed(4));
-
- // 4 - Bollinger
- add("باند بولینگر",b!==null&&last>b.mid&&last<b.upper,
-  b===null?"---":(last>b.mid?"بالای میانگین":"پایین میانگین"));
-
- // 5 - Stochastic
- add("استوکاستیک",st!==null&&st>50&&st<80,
-  st===null?"---":st.toFixed(1));
-
- // 6 - شکست سقف
- const previousHigh=Math.max(...data.slice(-21,-1).map(c=>c.high));
- add("شکست مقاومت",last>previousHigh,
-  formatPrice(previousHigh));
-
- // 7 - حجم معاملات
- add("تأیید حجم",
-  volumeAvg!==null&&currentVolume>volumeAvg*1.2&&last>prev,
-  volumeAvg===null?"---":
-   (currentVolume/Math.max(volumeAvg,1)).toFixed(2)+" برابر");
-
- // 8 - مومنتوم
- const momentum=close.length>5?last-close[close.length-5]:null;
- add("مومنتوم",momentum!==null&&momentum>0,
-  momentum===null?"---":momentum.toFixed(4));
-
- // 9 - ATR و نوسان
- const atrPercent=a&&last?(a/last)*100:0;
- add("قدرت نوسان",atrPercent>0.15&&atrPercent<3,
-  atrPercent.toFixed(2)+"٪");
-
- // 10 - ساختار کندل
- const candle=data[data.length-1];
- const body=candle.close-candle.open;
- const range=candle.high-candle.low;
- const bodyRatio=range>0?Math.abs(body)/range:0;
- add("ساختار کندل",body>0&&bodyRatio>0.55,
-  (bodyRatio*100).toFixed(1)+"٪");
-
- return results;
-}
-
-function renderStrategies(results){
- $("strategies").innerHTML=results.map(r=>{
-  const cls=r.vote==="BUY"?"good":r.vote==="SELL"?"bad":"neutral";
-  const label=r.vote==="BUY"?"خرید":r.vote==="SELL"?"فروش":"خنثی";
-  return `<tr>
-   <td>${r.name}</td>
-   <td class="${cls}">${label}</td>
-   <td>${r.value}</td>
-  </tr>`;
+function showAnalysis(){
+ const names=["۵ دقیقه","۱۵ دقیقه","۱ ساعت"];
+ $("tfresults").innerHTML=FRAMES.map((f,i)=>{
+  let a=analyses[f.res];if(!a)return "";
+  let label=a.direction==="BUY"?"خرید":a.direction==="SELL"?"فروش":"خنثی";
+  return `<tr><td>${names[i]}</td><td class="good">${a.buy}</td><td class="bad">${a.sell}</td><td>${a.wait}</td><td>${label}</td></tr>`;
  }).join("");
-}
-
-function analyze(results){
- const buy=results.filter(x=>x.vote==="BUY").length;
- const sell=results.filter(x=>x.vote==="SELL").length;
- const wait=results.filter(x=>x.vote==="WAIT").length;
-
- $("buyVotes").textContent=buy;
- $("sellVotes").textContent=sell;
-
- const difference=Math.abs(buy-sell);
- const strength=Math.round(difference/10*100);
- $("strength").textContent=strength+"٪";
-
- let title="عدم صدور سیگنال";
- let detail="اجماع کافی بین استراتژی‌ها وجود ندارد.";
- let cls="neutral";
-
- if(buy>=6 && buy>sell){
-  title="سیگنال احتمالی خرید";
-  detail="حداقل ۶ ماژول رأی خرید داده‌اند؛ هنوز نیازمند تأیید و آزمایش است.";
-  cls="good";
- }else if(sell>=6 && sell>buy){
-  title="سیگنال احتمالی فروش";
-  detail="حداقل ۶ ماژول رأی فروش داده‌اند؛ هنوز نیازمند تأیید و آزمایش است.";
-  cls="bad";
- }else{
-  detail=`خرید: ${buy} | فروش: ${sell} | خنثی: ${wait}`;
+ const a=analyses[15];
+ if(a){
+  $("buys").textContent=a.buy;$("sells").textContent=a.sell;
+  $("strategies").innerHTML=a.raw.map(x=>`<tr><td>${x[0]}</td><td class="${x[1]==="BUY"?"good":x[1]==="SELL"?"bad":"warn"}">${x[1]==="BUY"?"خرید":x[1]==="SELL"?"فروش":"خنثی"}</td><td>${fmt(x[2],4)}</td></tr>`).join("");
+  $("lastcandle").textContent=new Date(a.time*1000).toLocaleTimeString("fa-IR");
  }
-
- $("signal").textContent=title;
- $("signal").className="signal "+cls;
- $("signalDetail").textContent=detail;
- renderStrategies(results);
+ const dirs=FRAMES.map(f=>analyses[f.res]?.direction||"WAIT");
+ const same=dirs.every(x=>x==="BUY")?"BUY":dirs.every(x=>x==="SELL")?"SELL":"WAIT";
+ $("agreement").textContent=same==="BUY"?"هم‌جهت صعودی":same==="SELL"?"هم‌جهت نزولی":"عدم توافق";
+ $("signal").textContent=same==="BUY"?"اجماع خرید":same==="SELL"?"اجماع فروش":"عدم صدور سیگنال";
+ $("signal").className="signal "+(same==="BUY"?"good":same==="SELL"?"bad":"warn");
+ $("detail").textContent="۵m: "+dirs[0]+" | ۱۵m: "+dirs[1]+" | ۱h: "+dirs[2]+"؛ برای ورود آزمایشی هر سه باید هم‌جهت باشند.";
+ return same;
 }
-
 async function runAnalysis(){
- if(busy) return;
- busy=true;
- $("scan").disabled=true;
- $("scan").textContent="در حال تحلیل...";
-
+ if(busy)return;
+ busy=true;$("scan").disabled=true;$("scan").textContent="در حال تحلیل...";
  try{
-  await fetchLivePrice();
-  const data=await fetchCandles();
-  const results=calculateStrategies(data);
-  analyze(results);
-  log("تحلیل ۱۵ دقیقه‌ای انجام شد.");
-  setError("تحلیل با داده‌های دریافتی انجام شد. اعتبار داده باید بررسی شود.");
- }catch(error){
-  setError("خطای تحلیل: "+error.message);
-  log("تحلیل ناموفق: "+error.message);
+  let ok=await refreshPrice();if(!ok)throw Error("قیمت زنده در دسترس نیست");
+  for(const f of FRAMES){
+   const data=await candles(f);
+   analyses[f.res]=analyze(data);
+  }
+  const dir=showAnalysis();
+  log("تحلیل سه تایم‌فریم تکمیل شد: "+dir);
+  err("داده‌های سه تایم‌فریم دریافت و تحلیل شدند. این نتیجه تضمین سود نیست.");
+  if(autoEnabled)paperDecision(dir);
+ }catch(e){
+  err("تحلیل کامل نشد: "+e.message);
+  log("خطای تحلیل: "+e.message);
  }finally{
-  busy=false;
-  $("scan").disabled=false;
-  $("scan").textContent="اجرای تحلیل ۱۰ استراتژی";
+  busy=false;$("scan").disabled=false;$("scan").textContent="تحلیل هر سه تایم‌فریم";
+  renderPaper();
  }
 }
-
-async function refreshPrice(){
- await fetchLivePrice();
+function exposure(){
+ return positions.reduce((s,p)=>s+p.amount,0);
 }
-
+function paperDecision(dir){
+ if(!autoEnabled||!priceToman||dir==="WAIT")return;
+ const stamp=FRAMES.map(f=>analyses[f.res]?.time||0).join("-");
+ if(lastProcessed[market()]===stamp)return;
+ lastProcessed[market()]=stamp;
+ if(positions.length>=MAX_OPEN){log("حداکثر معاملات باز؛ ورود جدید ممنوع");return}
+ const amount=Math.min(capital*MAX_EXPOSURE- exposure(),capital*.10);
+ if(amount<=0)return;
+ const a=analyses[15],atrValue=a?.atr;
+ if(!atrValue||!Number.isFinite(atrValue))return;
+ const entry=priceToman;
+ const stopDistance=Math.max(atrValue/10*1.5,entry*.003);
+ const riskCash=capital*MAX_RISK;
+ const size=Math.min(amount,riskCash/(stopDistance/entry));
+ if(size<=0)return;
+ const qty=size/entry;
+ const sl=dir==="BUY"?entry-stopDistance:entry+stopDistance;
+ const tp=dir==="BUY"?entry+stopDistance*2:entry-stopDistance*2;
+ positions.push({side:dir,entry,sl,tp,qty,amount:size,opened:Date.now(),market:market()});
+ save();log("Paper معامله "+dir+" باز شد.");
+ renderPaper();
+}
+function closePosition(index,exit,reason){
+ const p=positions[index];if(!p)return;
+ const gross=(exit-p.entry)*p.qty*(p.side==="BUY"?1:-1);
+ const fees=(p.entry*p.qty+exit*p.qty)*FEE_RATE;
+ const net=gross-fees;
+ capital+=net;
+ history.unshift({side:p.side,entry:p.entry,exit,pnl:net,reason,time:Date.now()});
+ positions.splice(index,1);
+ save();log("معامله بسته شد: "+reason+" | "+fmt(net)+" تومان");
+}
+function updateOpenPositions(){
+ if(!priceToman)return;
+ for(let i=positions.length-1;i>=0;i--){
+  let p=positions[i],hitSL=p.side==="BUY"?priceToman<=p.sl:priceToman>=p.sl;
+  let hitTP=p.side==="BUY"?priceToman>=p.tp:priceToman<=p.tp;
+  if(hitSL)closePosition(i,priceToman,"حد ضرر");
+  else if(hitTP)closePosition(i,priceToman,"حد سود");
+ }
+ renderPaper();
+}
+function renderPaper(){
+ $("capital").textContent=fmt(capital)+" تومان";
+ $("exposure").textContent=fmt(exposure())+" تومان";
+ $("openCount").textContent=positions.length;
+ const pnl=history.reduce((s,x)=>s+x.pnl,0);
+ $("pnl").textContent=fmt(pnl)+" تومان";
+ $("pnl").className=pnl>=0?"good":"bad";
+ $("positions").innerHTML=positions.length?positions.map(p=>`<tr><td>${p.side==="BUY"?"خرید":"فروش"}</td><td>${fmt(p.entry)}</td><td>${fmt(p.sl)}</td><td>${fmt(p.tp)}</td><td class="warn">باز</td></tr>`).join(""):'<tr><td colspan="5">معامله بازی وجود ندارد.</td></tr>';
+ $("history").innerHTML=history.length?history.slice(0,30).map(p=>`<tr><td>${p.side==="BUY"?"خرید":"فروش"}</td><td>${fmt(p.entry)}</td><td>${fmt(p.exit)}</td><td class="${p.pnl>=0?"good":"bad"}">${fmt(p.pnl)}</td><td>${p.reason}</td></tr>`).join(""):'<tr><td colspan="5">تاریخچه خالی است.</td></tr>';
+}
 $("scan").addEventListener("click",runAnalysis);
-
-$("market").addEventListener("change",async()=>{
- $("price").textContent="---";
- $("change").textContent="---";
- currentPrice=null;
- await refreshPrice();
+$("market").addEventListener("change",()=>{analyses={};runAnalysis()});
+$("auto").checked=autoEnabled;
+$("auto").addEventListener("change",()=>{
+ autoEnabled=$("auto").checked;save();
+ log(autoEnabled?"Auto Paper Trading فعال شد":"Auto Paper Trading غیرفعال شد");
 });
-
+$("stop").addEventListener("click",()=>{
+ autoEnabled=false;$("auto").checked=false;save();
+ log("توقف اضطراری: ورود خودکار متوقف شد");
+});
+$("closeAll").addEventListener("click",()=>{
+ if(!priceToman){err("قیمت فعلی موجود نیست؛ بستن معاملات ممکن نیست");return}
+ for(let i=positions.length-1;i>=0;i--)closePosition(i,priceToman,"بستن دستی آزمایشی");
+});
 async function start(){
- log("شروع سیستم MAHORA AI V15");
- await refreshPrice();
-
- // قیمت هر ۱۵ ثانیه تازه می‌شود.
- timer=setInterval(refreshPrice,REFRESH_MS);
-
- // تحلیل خودکار هر ۱۵ دقیقه؛ تحلیل اولیه نیز اجرا می‌شود.
+ renderPaper();
  await runAnalysis();
- setInterval(()=>{
-  if(!busy) runAnalysis();
- },15*60*1000);
+ setInterval(async()=>{await refreshPrice();},15000);
+ setInterval(async()=>{if(!busy)await runAnalysis()},60000);
 }
-
 start();
 </script>
 </body>

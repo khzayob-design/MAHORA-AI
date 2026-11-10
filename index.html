@@ -3,56 +3,59 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MAHORA AI V18</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#09111f">
+<title>MAHORA AI V19</title>
 <style>
-:root{--bg:#080d18;--panel:#111a2b;--line:#26334a;--text:#edf3ff;--muted:#91a1ba;--green:#20d6a0;--red:#ff617b;--gold:#e8bd65;--blue:#6e9cff}
+:root{--bg:#09111f;--panel:#121e30;--panel2:#0c1727;--line:#293950;--txt:#edf3fc;--muted:#91a3bc;--green:#20d6a0;--red:#ff637c;--gold:#e9c16f;--blue:#78a7ff}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif;font-size:13px}
-header{padding:20px 16px;background:linear-gradient(120deg,#172b45,#101727);border-bottom:1px solid var(--line)}
-.brand{font-size:23px;font-weight:bold;letter-spacing:1px;color:var(--gold)}
-.sub{color:var(--muted);margin-top:7px;font-size:11px}
-.status{display:flex;gap:8px;align-items:center;margin-top:14px;color:var(--green)}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Tahoma,Arial,sans-serif;font-size:13px}
+header{padding:22px 16px;background:linear-gradient(125deg,#1b3452,#101a2b);border-bottom:1px solid var(--line)}
+.brand{font-size:24px;font-weight:900;letter-spacing:1px;color:var(--gold)}
+.subtitle{color:var(--muted);font-size:10px;margin-top:7px;letter-spacing:1px}
+.status{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--green)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
-main{max-width:1000px;margin:auto;padding:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px;margin-bottom:13px}
-h3{font-size:14px;margin:0 0 15px}
-.muted{color:var(--muted)}
-.price{font-size:25px;font-weight:bold;margin:12px 0}
-.green{color:var(--green)}.red{color:var(--red)}.gold{color:var(--gold)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.metric{background:#0b1423;padding:13px;border-radius:10px}
-.metric strong{display:block;font-size:17px;margin-top:8px}
-select,button{font-family:inherit;border-radius:9px;padding:11px;border:1px solid var(--line);background:#0b1423;color:var(--text)}
-select{width:100%;margin:5px 0 12px}
-button{cursor:pointer}
-button.primary{background:#176e59;border:0}
-button.danger{background:#6f2939;border:0}
-button:disabled{opacity:.4}
+main{max-width:1050px;margin:auto;padding:13px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:13px}
+h3{font-size:14px;margin:0 0 14px}
+.muted,small{color:var(--muted)}
+small{font-size:10px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-td,th{text-align:center;padding:10px 4px;border-bottom:1px solid var(--line)}
-th{color:var(--muted)}
-.pill{padding:5px 8px;border-radius:20px;background:#25344b}
-.bar{height:7px;background:#25344b;border-radius:8px;overflow:hidden;margin-top:9px}
-.bar span{display:block;height:100%;background:var(--green)}
+.price{font-size:26px;font-weight:bold;margin:13px 0}
+.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.metric{background:var(--panel2);padding:13px;border-radius:10px;min-width:0}
+.metric strong{display:block;font-size:17px;margin-top:8px;overflow-wrap:anywhere}
+select,input,button{font:inherit;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px}
+select,input{width:100%;margin:6px 0 12px}
+button{cursor:pointer}
+button.primary{background:#12694f;border:0}
+button.danger{background:#752c3d;border:0}
+button:disabled{opacity:.4;cursor:not-allowed}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .actions button{flex:1}
-.log{font-size:11px;color:var(--muted);padding:7px 0;border-bottom:1px solid var(--line)}
-canvas{width:100%;height:150px}
-small{color:var(--muted)}
-@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+.pill{padding:6px 9px;border-radius:20px;background:#263851;font-size:10px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+td,th{padding:10px 4px;text-align:center;border-bottom:1px solid var(--line)}
+th{color:var(--muted)}
+.bar{height:7px;border-radius:10px;background:#26364c;overflow:hidden;margin-top:9px}
+.bar span{display:block;height:100%;width:0;background:var(--green)}
+.log{font-size:11px;color:var(--muted);padding:9px 2px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+canvas{width:100%;height:160px}
+.note{background:#2a2418;border:1px solid #594a2d;padding:11px;border-radius:9px;color:#e9d4a5;line-height:1.9;font-size:11px}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:11px;line-height:2}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 </style>
 </head>
 <body>
 <header>
- <div class="brand">MAHORA AI <span class="gold">V18</span></div>
- <div class="sub">PROFESSIONAL AUTONOMOUS TRADING SYSTEM</div>
- <div class="status"><span class="dot"></span><span id="connection">در حال بررسی اتصال...</span></div>
+ <div class="brand">MAHORA AI <span>V19</span></div>
+ <div class="subtitle">ADVANCED MULTI-TIMEFRAME PAPER TRADING</div>
+ <div class="status"><span class="dot"></span><span id="connection">در حال اتصال به بازار...</span></div>
 </header>
 <main>
  <section class="card">
-  <div class="row"><h3>بازار معاملاتی</h3><span class="pill">PAPER MODE</span></div>
+  <div class="row"><h3>بازار معاملاتی</h3><span class="pill">PAPER ONLY</span></div>
   <select id="symbol">
    <option value="BTCUSDT">بیت‌کوین BTC</option>
    <option value="ETHUSDT">اتریوم ETH</option>
@@ -64,41 +67,51 @@ small{color:var(--muted)}
   </select>
   <div class="muted">قیمت لحظه‌ای (USDT)</div>
   <div class="price" id="price">---</div>
-  <div id="change" class="muted">در انتظار اطلاعات بازار</div>
-  <small id="updated">آخرین بروزرسانی: ---</small>
+  <div id="change" class="muted">در انتظار داده بازار</div>
+  <small id="updated">آخرین دریافت: ---</small>
  </section>
 
  <section class="grid">
-  <div class="metric"><span class="muted">سرمایه آزمایشی</span><strong id="balance">10,000,000</strong><small>تومان</small></div>
-  <div class="metric"><span class="muted">سود و زیان بسته‌شده</span><strong id="profit">0</strong><small>تومان</small></div>
-  <div class="metric"><span class="muted">معاملات باز</span><strong id="openCount">0</strong></div>
-  <div class="metric"><span class="muted">ارزش معاملات باز</span><strong id="exposure">0</strong><small>تومان</small></div>
+  <div class="metric"><span class="muted">سرمایه آزمایشی</span><strong id="balance">۱۰٬۰۰۰٬۰۰۰</strong><small>تومان</small></div>
+  <div class="metric"><span class="muted">سود و زیان بسته‌شده</span><strong id="closedPnl">۰</strong><small>تومان</small></div>
+  <div class="metric"><span class="muted">معاملات باز</span><strong id="openCount">۰</strong></div>
+  <div class="metric"><span class="muted">سرمایه درگیر</span><strong id="exposure">۰</strong><small>تومان</small></div>
+ </section>
+
+ <section class="card">
+  <h3>تنظیمات سرمایه و تبدیل ارز</h3>
+  <label>نرخ هر تتر به تومان</label>
+  <input id="fx" type="number" min="1" step="1000" placeholder="مثلاً ۱۰۰۰۰۰">
+  <small>نرخ را از منبع مورد اعتماد خودت وارد کن. نرخ پیش‌فرضی در نظر گرفته نشده است.</small>
+  <div class="note" style="margin-top:12px">تا وقتی نرخ تبدیل وارد نشده باشد، سیستم فقط تحلیل می‌کند و معامله آزمایشی جدید باز نمی‌کند.</div>
  </section>
 
  <section class="card">
   <h3>نمودار قیمت</h3>
-  <canvas id="chart" width="900" height="250"></canvas>
-  <small>نمودار بر اساس داده‌های دریافتی بازار</small>
+  <canvas id="chart" width="900" height="260"></canvas>
+  <small>نمایش تغییرات قیمت دریافتی در همین نشست</small>
  </section>
 
  <section class="card">
-  <h3>موتور تحلیل چندتایم‌فریمی</h3>
+  <h3>موتور تحلیل سه تایم‌فریم</h3>
   <div class="grid">
    <div class="metric"><span>۵ دقیقه</span><strong id="tf5">WAIT</strong></div>
    <div class="metric"><span>۱۵ دقیقه</span><strong id="tf15">WAIT</strong></div>
    <div class="metric"><span>۱ ساعت</span><strong id="tf60">WAIT</strong></div>
    <div class="metric"><span>تصمیم نهایی</span><strong id="decision">WAIT</strong></div>
   </div>
-  <div style="margin-top:15px" class="row"><span>قدرت توافق</span><strong id="agreement">0%</strong></div>
-  <div class="bar"><span id="agreementBar" style="width:0%"></span></div>
+  <div class="row" style="margin-top:15px"><span class="muted">قدرت توافق سه تایم‌فریم</span><strong id="agreement">۰٪</strong></div>
+  <div class="bar"><span id="agreementBar"></span></div>
+  <p class="muted" id="analysisInfo">در انتظار تکمیل تحلیل...</p>
  </section>
 
  <section class="card">
-  <h3>۱۰ ماژول تحلیل</h3>
+  <h3>۱۰ استراتژی تحلیلی</h3>
   <table>
    <thead><tr><th>استراتژی</th><th>۵m</th><th>۱۵m</th><th>۱h</th></tr></thead>
-   <tbody id="strategies"></tbody>
+   <tbody id="strategyRows"></tbody>
   </table>
+  <small>سیگنال‌ها بر اساس آخرین کندل بسته‌شده محاسبه می‌شوند.</small>
  </section>
 
  <section class="card">
@@ -106,24 +119,24 @@ small{color:var(--muted)}
   <div class="grid">
    <div class="metric"><span>ریسک هر معامله</span><strong>۱٪</strong></div>
    <div class="metric"><span>حداکثر معاملات باز</span><strong>۳</strong></div>
-   <div class="metric"><span>حداکثر سرمایه درگیر</span><strong>۳۰٪</strong></div>
-   <div class="metric"><span>کارمزد فرضی</span><strong>۰٫۱٪</strong></div>
+   <div class="metric"><span>سقف سرمایه درگیر</span><strong>۳۰٪</strong></div>
+   <div class="metric"><span>کارمزد فرضی هر طرف</span><strong>۰٫۱٪</strong></div>
   </div>
-  <p class="muted">حد سود و ضرر آزمایشی با ATR و بر اساس نوسان بازار تعیین می‌شود.</p>
+  <p class="muted">حد ضرر با فاصله ۱٫۵ برابر ATR و حد سود با نسبت ریسک به بازده ۲ به ۱ محاسبه می‌شود.</p>
  </section>
 
  <section class="card">
   <div class="row"><h3>معاملات خودکار آزمایشی</h3><span class="pill gold">REAL TRADING OFF</span></div>
   <div class="actions">
-   <button class="primary" id="auto">فعال‌سازی Paper Trading</button>
-   <button class="danger" id="stop">توقف اضطراری</button>
+   <button class="primary" id="autoBtn">فعال‌سازی Paper Trading</button>
+   <button class="danger" id="emergencyBtn">توقف اضطراری</button>
   </div>
   <p id="autoStatus" class="muted">ربات خاموش است.</p>
-  <small>فقط معاملات شبیه‌سازی‌شده؛ هیچ سفارش واقعی ارسال نمی‌شود.</small>
+  <small>فقط شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود.</small>
  </section>
 
  <section class="card">
-  <div class="row"><h3>معاملات باز</h3><button id="closeAll">بستن آزمایشی همه</button></div>
+  <div class="row"><h3>معاملات باز</h3><button id="closeAll">بستن همه معاملات</button></div>
   <div id="positions" class="muted">معامله بازی وجود ندارد.</div>
  </section>
 
@@ -136,147 +149,408 @@ small{color:var(--muted)}
   <h3>گزارش سیستم</h3>
   <div id="logs"></div>
  </section>
- <footer class="muted" style="text-align:center;padding:20px">
-  MAHORA AI V18 · PAPER TRADING ONLY<br>
-  این سیستم سود را تضمین نمی‌کند.
- </footer>
+
+ <footer>MAHORA AI V19 · PAPER TRADING ONLY<br>هیچ نرخ برد یا سودی تضمین نمی‌شود.</footer>
 </main>
 <script>
 "use strict";
+
+/* MAHORA AI V19 - Browser-based paper trading prototype.
+   No real exchange orders. Public Binance market data only. */
+
 const $=id=>document.getElementById(id);
 const API="https://api.binance.com/api/v3";
-const START=10000000, FEE=.001, RISK=.01, MAX_OPEN=3;
-let price=0, candles={}, analyses={}, auto=false, busy=false;
-let balance=START, closed=[], positions=[], logs=[], lastCandle="";
-let historyPrices=[];
-const names=["EMA","RSI","MACD","Bollinger","Stochastic","Breakout","Volume","Momentum","ATR","Candle"];
-const intervals=["5m","15m","1h"];
-const fmt=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:2});
-function log(s){logs.unshift(new Date().toLocaleTimeString("fa-IR")+" - "+s);logs=logs.slice(0,20);$("logs").innerHTML=logs.map(x=>'<div class="log">'+x+'</div>').join("")}
-function ema(a,p){let k=2/(p+1),v=a[0];for(let x of a.slice(1))v=x*k+v*(1-k);return v}
-function rsi(a){let gains=0,losses=0;for(let i=a.length-14;i<a.length;i++){let d=a[i]-a[i-1];if(d>0)gains+=d;else losses-=d}return losses===0?100:100-100/(1+gains/losses)}
-function atr(c){let s=0;for(let i=c.length-14;i<c.length;i++)s+=c[i].h-c[i].l;return s/14}
-function signal(c){
- let a=c.map(x=>x.c),last=a.at(-1),e12=ema(a.slice(-50),12),e26=ema(a.slice(-50),26),r=rsi(a);
- let avg=a.slice(-20).reduce((x,y)=>x+y,0)/20;
- let sd=Math.sqrt(a.slice(-20).reduce((x,y)=>x+(y-avg)**2,0)/20);
- let highs=c.slice(-20,-1).map(x=>x.h),lows=c.slice(-20,-1).map(x=>x.l);
- let out=[
- e12>e26?"BUY":e12<e26?"SELL":"WAIT",
- r<35?"BUY":r>70?"SELL":"WAIT",
- e12>e26&&last>e12?"BUY":e12<e26&&last<e12?"SELL":"WAIT",
- last<avg-2*sd?"BUY":last>avg+2*sd?"SELL":"WAIT",
- r<25?"BUY":r>80?"SELL":"WAIT",
- last>Math.max(...highs)?"BUY":last<Math.min(...lows)?"SELL":"WAIT",
- c.at(-1).v>c.slice(-20,-1).reduce((s,x)=>s+x.v,0)/19*1.5?(last>c.at(-2).c?"BUY":"SELL"):"WAIT",
- last>a.at(-5)?"BUY":last<a.at(-5)?"SELL":"WAIT",
- last>c.at(-2).c+atr(c)?"BUY":last<c.at(-2).c-atr(c)?"SELL":"WAIT",
- c.at(-1).c>c.at(-1).o?"BUY":c.at(-1).c<c.at(-1).o?"SELL":"WAIT"
- ];
- return {out,atr:atr(c),last};
+const INITIAL_CAPITAL=10000000;
+const FEE_RATE=0.001;
+const RISK_RATE=0.01;
+const MAX_POSITIONS=3;
+const MAX_EXPOSURE=0.30;
+const MAX_TRADE_EXPOSURE=0.10;
+const TIMEFRAMES=["5m","15m","1h"];
+const STRATEGIES=["EMA Trend","RSI","MACD","Bollinger","Stochastic","Breakout","Volume","Momentum","ATR","Candle"];
+const STORAGE_KEY="MAHORA_AI_V19_PAPER";
+
+let price=0,market={},analysis={},historyPrices=[];
+let auto=false,requestBusy=false,lastDecisionCandle="";
+let balance=INITIAL_CAPITAL,positions=[],closedTrades=[],logs=[];
+let fx=0;
+
+const number=n=>Number(n||0).toLocaleString("fa-IR",{maximumFractionDigits:0});
+const decimal=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:6});
+const sideLabel=s=>s==="BUY"?"خرید":s==="SELL"?"فروش":"خنثی";
+const safe=(v)=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function log(message){
+ logs.unshift(new Date().toLocaleTimeString("fa-IR")+" - "+message);
+ logs=logs.slice(0,25);
+ $("logs").innerHTML=logs.map(x=>'<div class="log">'+safe(x)+'</div>').join("");
 }
-async function fetchMarket(){
- if(busy)return;busy=true;
+
+function saveState(){
  try{
- let sym=$("symbol").value;
- let [t,p]=await Promise.all([
- Promise.all(intervals.map(async tf=>{
-  let r=await fetch(`${API}/klines?symbol=${sym}&interval=${tf}&limit=100`);
-  if(!r.ok)throw Error("دریافت کندل ناموفق");
-  let d=await r.json();
-  return [tf,d.map(x=>({o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5],time:x[0]}))];
- })),
- fetch(`${API}/ticker/24hr?symbol=${sym}`)
- ]);
- let ticker=await p.json();
- candles=Object.fromEntries(t);
- price=+ticker.lastPrice;
- if(!Number.isFinite(price)||price<=0)throw Error("قیمت نامعتبر");
- $("price").textContent=fmt(price)+" USDT";
- $("change").textContent="تغییر ۲۴ ساعت: "+(+ticker.priceChangePercent).toFixed(2)+"٪";
- $("updated").textContent="آخرین دریافت: "+new Date().toLocaleTimeString("fa-IR");
- $("connection").textContent="اتصال قیمت برقرار";
- historyPrices.push(price);historyPrices=historyPrices.slice(-80);drawChart();
- analyze();
- }catch(e){$("connection").textContent="خطا در دریافت داده: "+e.message;log("خطای بازار: "+e.message)}
- finally{busy=false}
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+   balance,positions,closedTrades,fx
+  }));
+ }catch(e){log("ذخیره‌سازی مرورگر در دسترس نیست")}
 }
-function analyze(){
- for(let tf of intervals)analyses[tf]=signal(candles[tf]);
- let votes={};
- for(let tf of intervals){
-  let s=analyses[tf].out;
-  let b=s.filter(x=>x==="BUY").length, sell=s.filter(x=>x==="SELL").length;
-  votes[tf]=b>=6?"BUY":sell>=6?"SELL":"WAIT";
-  $(tf==="5m"?"tf5":tf==="15m"?"tf15":"tf60").textContent=votes[tf];
+
+function loadState(){
+ try{
+  const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+  if(!s)return;
+  if(Number.isFinite(s.balance)&&s.balance>0)balance=s.balance;
+  if(Array.isArray(s.positions))positions=s.positions;
+  if(Array.isArray(s.closedTrades))closedTrades=s.closedTrades;
+  if(Number.isFinite(s.fx)&&s.fx>0)fx=s.fx;
+ }catch(e){log("اطلاعات ذخیره‌شده قابل بازیابی نبود")}
+ $("fx").value=fx||"";
+}
+
+function ema(values,period){
+ if(values.length<period)return null;
+ const k=2/(period+1);
+ let value=values[0];
+ for(let i=1;i<values.length;i++)value=values[i]*k+value*(1-k);
+ return value;
+}
+
+function average(values){
+ return values.reduce((a,b)=>a+b,0)/values.length;
+}
+
+function rsi(values,period=14){
+ if(values.length<period+1)return 50;
+ let gain=0,loss=0;
+ for(let i=values.length-period;i<values.length;i++){
+  const d=values[i]-values[i-1];
+  if(d>0)gain+=d;else loss-=d;
  }
- let vals=Object.values(votes),decision=vals.every(x=>x==="BUY")?"BUY":vals.every(x=>x==="SELL")?"SELL":"WAIT";
- $("decision").textContent=decision;
- let agree=decision==="WAIT"?0:100;
- $("agreement").textContent=agree+"%";$("agreementBar").style.width=agree+"%";
- $("strategies").innerHTML=names.map((n,i)=>`<tr><td>${n}</td>${intervals.map(tf=>`<td>${analyses[tf].out[i]}</td>`).join("")}</tr>`).join("");
- let stamp=candles["15m"].at(-1).time;
- if(auto&&stamp!==lastCandle){lastCandle=stamp;if(decision!=="WAIT")openPaper(decision)}
- updatePositions();render();
+ if(loss===0)return gain===0?50:100;
+ return 100-100/(1+gain/loss);
 }
+
+function atr(data,period=14){
+ if(data.length<period+1)return 0;
+ let ranges=[];
+ for(let i=data.length-period;i<data.length;i++){
+  const c=data[i],prev=data[i-1];
+  ranges.push(Math.max(c.h-c.l,Math.abs(c.h-prev.c),Math.abs(c.l-prev.c)));
+ }
+ return average(ranges);
+}
+
+function macd(values){
+ if(values.length<35)return 0;
+ return ema(values.slice(-35),12)-ema(values.slice(-35),26);
+}
+
+function analyzeCandles(data){
+ if(!data||data.length<60)throw Error("تعداد کندل کافی نیست");
+ const c=data.slice(0,-1); // آخرین کندل ناتمام حذف می‌شود
+ if(c.length<55)throw Error("کندل بسته‌شده کافی نیست");
+
+ const closes=c.map(x=>x.c);
+ const last=c[c.length-1],prev=c[c.length-2];
+ const e12=ema(closes.slice(-50),12);
+ const e26=ema(closes.slice(-50),26);
+ const r=rsi(closes);
+ const m=macd(closes);
+ const mean=average(closes.slice(-20));
+ const sd=Math.sqrt(average(closes.slice(-20).map(x=>(x-mean)**2)));
+ const upper=mean+2*sd,lower=mean-2*sd;
+ const recent=c.slice(-14);
+ const low14=Math.min(...recent.map(x=>x.l));
+ const high14=Math.max(...recent.map(x=>x.h));
+ const momentum=last.c-closes[closes.length-5];
+ const volumeAvg=average(c.slice(-21,-1).map(x=>x.v));
+ const volatility=atr(c);
+ const candleRange=last.h-last.l||1;
+ const stochastic=100*(last.c-low14)/(high14-low14||1);
+
+ const signals=[
+  e12>e26&&last.c>e12?"BUY":e12<e26&&last.c<e12?"SELL":"WAIT",
+  r<30?"BUY":r>70?"SELL":"WAIT",
+  m>0&&m>macd(closes.slice(0,-1))?"BUY":m<0&&m<macd(closes.slice(0,-1))?"SELL":"WAIT",
+  last.c<lower?"BUY":last.c>upper?"SELL":"WAIT",
+  stochastic<20?"BUY":stochastic>80?"SELL":"WAIT",
+  last.c>Math.max(...c.slice(-21,-1).map(x=>x.h))?"BUY":
+   last.c<Math.min(...c.slice(-21,-1).map(x=>x.l))?"SELL":"WAIT",
+  last.v>volumeAvg*1.5?(last.c>last.o?"BUY":last.c<last.o?"SELL":"WAIT"):"WAIT",
+  momentum>0?"BUY":momentum<0?"SELL":"WAIT",
+  last.c>prev.c+volatility?"BUY":last.c<prev.c-volatility?"SELL":"WAIT",
+  last.c>last.o&&last.c>prev.h?"BUY":
+   last.c<last.o&&last.c<prev.l?"SELL":"WAIT"
+ ];
+
+ const buys=signals.filter(x=>x==="BUY").length;
+ const sells=signals.filter(x=>x==="SELL").length;
+ const direction=buys>=6?"BUY":sells>=6?"SELL":"WAIT";
+
+ return {signals,buys,sells,direction,atr:volatility,
+  candleTime:last.time,close:last.c};
+}
+
+async function fetchCandles(symbol,interval){
+ const response=await fetch(`${API}/klines?symbol=${symbol}&interval=${interval}&limit=100`);
+ if(!response.ok)throw Error("خطا در دریافت کندل "+interval);
+ const rows=await response.json();
+ return rows.map(x=>({
+  time:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]
+ }));
+}
+
+async function refreshMarket(){
+ if(requestBusy)return;
+ requestBusy=true;
+ try{
+  const symbol=$("symbol").value;
+  const results=await Promise.all([
+   ...TIMEFRAMES.map(tf=>fetchCandles(symbol,tf)),
+   fetch(`${API}/ticker/price?symbol=${symbol}`).then(r=>{
+    if(!r.ok)throw Error("خطای دریافت قیمت");
+    return r.json();
+   }),
+   fetch(`${API}/ticker/24hr?symbol=${symbol}`).then(r=>{
+    if(!r.ok)throw Error("خطای آمار بازار");
+    return r.json();
+   })
+  ]);
+
+  market={
+   "5m":results[0],
+   "15m":results[1],
+   "1h":results[2]
+  };
+  price=Number(results[3].price);
+  const ticker=results[4];
+
+  if(!Number.isFinite(price)||price<=0)throw Error("قیمت نامعتبر");
+
+  $("price").textContent=decimal(price)+" USDT";
+  const change=Number(ticker.priceChangePercent);
+  $("change").textContent="تغییر ۲۴ ساعت: "+change.toFixed(2)+"٪";
+  $("change").className=change>=0?"green":"red";
+  $("updated").textContent="آخرین دریافت: "+new Date().toLocaleTimeString("fa-IR");
+  $("connection").textContent="اتصال قیمت برقرار";
+  historyPrices.push(price);
+  historyPrices=historyPrices.slice(-100);
+  drawChart();
+
+  runAnalysis();
+ }catch(error){
+  $("connection").textContent="خطا در دریافت داده بازار";
+  log(error.message);
+ }finally{
+  requestBusy=false;
+ }
+}
+
+function runAnalysis(){
+ try{
+  for(const tf of TIMEFRAMES)analysis[tf]=analyzeCandles(market[tf]);
+
+  const a=analysis;
+  $("tf5").textContent=a["5m"].direction;
+  $("tf15").textContent=a["15m"].direction;
+  $("tf60").textContent=a["1h"].direction;
+
+  const directions=TIMEFRAMES.map(tf=>a[tf].direction);
+  const unanimous=directions.every(x=>x==="BUY")||directions.every(x=>x==="SELL");
+  const decision=unanimous?directions[0]:"WAIT";
+
+  $("decision").textContent=decision;
+  const agreement=unanimous?100:Math.round(
+   Math.max(...["BUY","SELL"].map(s=>directions.filter(x=>x===s).length))/3*100
+  );
+  $("agreement").textContent=agreement+"٪";
+  $("agreementBar").style.width=agreement+"%";
+
+  $("analysisInfo").textContent=unanimous?
+   "هر سه تایم‌فریم هم‌جهت هستند؛ شرایط سیگنال فراهم است.":
+   "تایم‌فریم‌ها توافق ندارند؛ ورود جدید صادر نمی‌شود.";
+
+  $("strategyRows").innerHTML=STRATEGIES.map((name,i)=>
+   `<tr><td>${name}</td>${TIMEFRAMES.map(tf=>
+    `<td class="${analysis[tf].signals[i]==="BUY"?"green":analysis[tf].signals[i]==="SELL"?"red":""}">${analysis[tf].signals[i]}</td>`
+   ).join("")}</tr>`
+  ).join("");
+
+  managePositions();
+
+  const stamp=market["15m"].slice(-2)[0].time;
+  if(auto&&unanimous&&stamp!==lastDecisionCandle){
+   lastDecisionCandle=stamp;
+   openPaper(decision);
+  }
+  render();
+ }catch(error){
+  $("analysisInfo").textContent="تحلیل کامل نشد: "+error.message;
+  log("خطای تحلیل: "+error.message);
+ }
+}
+
 function openPaper(side){
- if(positions.length>=MAX_OPEN||balance<10000)return;
- let vol=analyses["15m"].atr;
- if(!Number.isFinite(vol)||vol<=0)return;
- let entry=price,stopDist=vol*1.5;
- let riskMoney=balance*RISK;
- let notional=Math.min(balance*.10,riskMoney*entry/stopDist);
- let qty=notional/entry;
- let fee=notional*FEE;
- let stop=side==="BUY"?entry-stopDist:entry+stopDist;
- let target=side==="BUY"?entry+stopDist*2:entry-stopDist*2;
- balance-=fee;
- positions.push({side,entry,qty,stop,target,fee,notional,time:Date.now()});
- log("ورود آزمایشی "+side+" | "+fmt(entry));
- render();
+ if(!auto)return;
+ if(!fx||fx<=0){log("ورود متوقف شد: نرخ تبدیل تتر وارد نشده است");return}
+ if(positions.length>=MAX_POSITIONS){log("سقف تعداد معاملات باز پر شده است");return}
+ if(!price||!analysis["15m"]?.atr)return;
+
+ const equity=balance+unrealizedPnl();
+ const riskCash=equity*RISK_RATE;
+ const stopDistance=analysis["15m"].atr*1.5;
+ if(stopDistance<=0)return;
+
+ const qtyByRisk=riskCash/(stopDistance*fx);
+ const maxTradeToman=equity*MAX_TRADE_EXPOSURE;
+ const maxTotalToman=equity*MAX_EXPOSURE;
+ const currentExposure=positions.reduce((s,p)=>s+p.qty*p.entry*p.fx,0);
+ const available=Math.max(0,Math.min(maxTradeToman,maxTotalToman-currentExposure));
+ const qty=Math.min(qtyByRisk,available/(price*fx));
+
+ if(!Number.isFinite(qty)||qty<=0){log("حجم مجاز معامله کافی نیست");return}
+
+ const notional=qty*price*fx;
+ const entryFee=notional*FEE_RATE;
+ const stop=side==="BUY"?price-stopDistance:price+stopDistance;
+ const target=side==="BUY"?price+stopDistance*2:price-stopDistance*2;
+
+ if(balance<entryFee){log("سرمایه برای کارمزد کافی نیست");return}
+ balance-=entryFee;
+
+ positions.push({
+  side,entry:price,qty,fx,stop,target,entryFee,
+  notional,openedAt:Date.now(),symbol:$("symbol").value
+ });
+
+ log("معامله آزمایشی "+side+" باز شد؛ ارزش "+number(notional)+" تومان");
+ saveState();render();
 }
-function closePosition(i,reason){
- let p=positions[i];if(!p)return;
- let gross=(price-p.entry)*p.qty*(p.side==="BUY"?1:-1);
- let fee=price*p.qty*FEE;
- let pnl=gross-p.fee-fee;
- balance+=p.notional+pnl;
- closed.unshift({side:p.side,entry:p.entry,exit:price,pnl,reason,time:Date.now()});
- positions.splice(i,1);log("خروج آزمایشی: "+reason+" | "+fmt(pnl)+" USDT");render();
+
+function unrealizedPnl(){
+ return positions.reduce((sum,p)=>{
+  const gross=(price-p.entry)*p.qty*(p.side==="BUY"?1:-1)*p.fx;
+  const exitFee=price*p.qty*p.fx*FEE_RATE;
+  return sum+gross-exitFee;
+ },0);
 }
-function updatePositions(){
+
+function closePosition(index,reason){
+ const p=positions[index];
+ if(!p||!price)return;
+
+ const gross=(price-p.entry)*p.qty*(p.side==="BUY"?1:-1)*p.fx;
+ const exitFee=price*p.qty*p.fx*FEE_RATE;
+ const pnl=gross-p.entryFee-exitFee;
+
+ // Entry fee was deducted at opening; add gross profit/loss and deduct exit fee.
+ balance+=gross-exitFee;
+
+ closedTrades.unshift({
+  side:p.side,entry:p.entry,exit:price,qty:p.qty,
+  pnl,reason,time:Date.now(),symbol:p.symbol
+ });
+ positions.splice(index,1);
+ log("معامله بسته شد: "+reason+" | "+number(pnl)+" تومان");
+ saveState();render();
+}
+
+function managePositions(){
  for(let i=positions.length-1;i>=0;i--){
-  let p=positions[i];
-  if(p.side==="BUY"&&(price<=p.stop||price>=p.target))closePosition(i,price<=p.stop?"STOP LOSS":"TAKE PROFIT");
-  else if(p.side==="SELL"&&(price>=p.stop||price<=p.target))closePosition(i,price>=p.stop?"STOP LOSS":"TAKE PROFIT");
+  const p=positions[i];
+  const hitStop=p.side==="BUY"?price<=p.stop:price>=p.stop;
+  const hitTarget=p.side==="BUY"?price>=p.target:price<=p.target;
+  if(hitStop)closePosition(i,"STOP LOSS");
+  else if(hitTarget)closePosition(i,"TAKE PROFIT");
  }
 }
+
 function render(){
- $("balance").textContent=fmt(balance);
- $("profit").textContent=fmt(closed.reduce((s,x)=>s+x.pnl,0));
- $("openCount").textContent=positions.length;
- $("exposure").textContent=fmt(positions.reduce((s,p)=>s+p.notional,0));
- $("positions").innerHTML=positions.length?positions.map((p,i)=>`<div class="log">${p.side} | ورود ${fmt(p.entry)} | SL ${fmt(p.stop)} | TP ${fmt(p.target)} <button onclick="closePosition(${i},'MANUAL')">بستن</button></div>`).join(""):"معامله بازی وجود ندارد.";
- $("history").innerHTML=closed.length?closed.slice(0,20).map(p=>`<div class="log">${p.side} | ${fmt(p.entry)} ← ${fmt(p.exit)} | سود/زیان: ${fmt(p.pnl)} | ${p.reason}</div>`).join(""):"تاریخچه خالی است.";
+ const pnl=closedTrades.reduce((s,t)=>s+t.pnl,0);
+ const exposure=positions.reduce((s,p)=>s+p.notional,0);
+
+ $("balance").textContent=number(balance);
+ $("closedPnl").textContent=number(pnl);
+ $("closedPnl").className=pnl>=0?"green":"red";
+ $("openCount").textContent=number(positions.length);
+ $("exposure").textContent=number(exposure);
+
+ $("positions").innerHTML=positions.length?positions.map((p,i)=>`
+  <div class="log">
+   <b>${p.symbol} · ${sideLabel(p.side)}</b><br>
+   ورود: ${decimal(p.entry)} USDT<br>
+   حد ضرر: ${decimal(p.stop)} · حد سود: ${decimal(p.target)}<br>
+   <button onclick="closePosition(${i},'MANUAL')">بستن آزمایشی</button>
+  </div>`).join(""):"معامله بازی وجود ندارد.";
+
+ $("history").innerHTML=closedTrades.length?closedTrades.slice(0,30).map(t=>`
+  <div class="log">
+   ${t.symbol} · ${sideLabel(t.side)} · ورود ${decimal(t.entry)} · خروج ${decimal(t.exit)}
+   <br><b class="${t.pnl>=0?"green":"red"}">${number(t.pnl)} تومان</b>
+   · ${safe(t.reason)} · ${new Date(t.time).toLocaleString("fa-IR")}
+  </div>`).join(""):"تاریخچه خالی است.";
 }
+
 function drawChart(){
- let c=$("chart"),ctx=c.getContext("2d"),w=c.width,h=c.height;
- ctx.clearRect(0,0,w,h);if(historyPrices.length<2)return;
- let min=Math.min(...historyPrices),max=Math.max(...historyPrices),range=max-min||1;
- ctx.beginPath();ctx.strokeStyle="#20d6a0";ctx.lineWidth=3;
- historyPrices.forEach((v,i)=>{let x=i*w/(historyPrices.length-1),y=h-15-(v-min)/range*(h-30);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});
+ const canvas=$("chart"),ctx=canvas.getContext("2d");
+ const w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+ if(historyPrices.length<2)return;
+ const min=Math.min(...historyPrices),max=Math.max(...historyPrices);
+ const range=max-min||1;
+ ctx.beginPath();ctx.lineWidth=3;ctx.strokeStyle="#20d6a0";
+ historyPrices.forEach((v,i)=>{
+  const x=15+i*(w-30)/(historyPrices.length-1);
+  const y=h-15-(v-min)/range*(h-30);
+  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+ });
  ctx.stroke();
 }
-$("auto").onclick=()=>{
- auto=!auto;$("auto").textContent=auto?"خاموش کردن معاملات آزمایشی":"فعال‌سازی Paper Trading";
- $("autoStatus").textContent=auto?"Paper Trading فعال است؛ فقط در صورت توافق سه تایم‌فریم وارد می‌شود.":"ربات خاموش است.";
+
+$("fx").addEventListener("change",()=>{
+ const v=Number($("fx").value);
+ fx=Number.isFinite(v)&&v>0?v:0;
+ $("fx").value=fx||"";
+ saveState();
+ log(fx?"نرخ تبدیل ثبت شد":"نرخ تبدیل پاک شد");
+});
+
+$("autoBtn").onclick=()=>{
+ if(!auto&&!fx){
+  $("autoStatus").textContent="ابتدا نرخ هر تتر به تومان را وارد کن.";
+  log("فعال‌سازی رد شد: نرخ تبدیل نامشخص است");
+  return;
+ }
+ auto=!auto;
+ $("autoBtn").textContent=auto?"خاموش کردن معاملات خودکار":"فعال‌سازی Paper Trading";
+ $("autoStatus").textContent=auto?
+  "Paper Trading فعال است؛ فقط سیگنال هم‌جهت سه تایم‌فریم بررسی می‌شود.":
+  "ربات خاموش است.";
  log(auto?"Paper Trading فعال شد":"Paper Trading خاموش شد");
 };
-$("stop").onclick=()=>{auto=false;$("auto").textContent="فعال‌سازی Paper Trading";$("autoStatus").textContent="توقف اضطراری: ورود جدید متوقف شد؛ معاملات باز همچنان تحت پایش هستند.";log("توقف اضطراری")};
-$("closeAll").onclick=()=>{for(let i=positions.length-1;i>=0;i--)closePosition(i,"CLOSE ALL")};
-$("symbol").onchange=()=>{historyPrices=[];fetchMarket()};
-fetchMarket();setInterval(fetchMarket,15000);
-render();log("MAHORA AI V18 راه‌اندازی شد");
+
+$("emergencyBtn").onclick=()=>{
+ auto=false;
+ $("autoBtn").textContent="فعال‌سازی Paper Trading";
+ $("autoStatus").textContent="توقف اضطراری: ورود جدید متوقف شد؛ معاملات باز همچنان پایش می‌شوند.";
+ log("توقف اضطراری فعال شد");
+};
+
+$("closeAll").onclick=()=>{
+ for(let i=positions.length-1;i>=0;i--)closePosition(i,"CLOSE ALL");
+};
+
+$("symbol").onchange=()=>{
+ lastDecisionCandle="";
+ historyPrices=[];
+ log("بازار معاملاتی تغییر کرد");
+ refreshMarket();
+};
+
+loadState();
+render();
+log("MAHORA AI V19 راه‌اندازی شد");
+refreshMarket();
+setInterval(refreshMarket,15000);
 </script>
 </body>
 </html>

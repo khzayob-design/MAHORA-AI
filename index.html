@@ -1,939 +1,196 @@
 
-import os
-import time
-import sqlite3
-import asyncio
-import logging
-from datetime import datetime, timezone
-
-import requests
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-
-# =====================================================
-# تنظیمات MAHORA AI
-# =====================================================
-
-APP_NAME = "MAHORA AI"
-DB_FILE = os.getenv("DB_FILE", "mahora.db")
-
-INITIAL_BALANCE = float(os.getenv("PAPER_BALANCE", "10000000"))
-USDT_TOMAN = float(os.getenv("USDT_TOMAN", "100000"))
-FEE_RATE = 0.001
-SLIPPAGE = 0.0005
-RISK_PER_TRADE = 0.01
-MAX_OPEN_TRADES = 3
-MIN_AGREEMENT = 6
-TIMEFRAME = "15m"
-LOOP_SECONDS = 60
-
-SYMBOLS = [
-    "BTCUSDT", "ETHUSDT", "XRPUSDT",
-    "BNBUSDT", "SOLUSDT", "DOGEUSDT",
-    "PEPEUSDT"
-]
-
-logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("MAHORA")
-
-app = FastAPI(
-    title="MAHORA AI",
-    version="1.0.0",
-    description="سامانه معاملات آزمایشی ماهورا"
-)
-
-# =====================================================
-# دیتابیس
-# =====================================================
-
-def db():
-    con = sqlite3.connect(DB_FILE, timeout=20)
-    con.row_factory = sqlite3.Row
-    return con
-
-
-def init_db():
-    con = db()
-    cur = con.cursor()
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS settings (
-        id INTEGER PRIMARY KEY CHECK(id=1),
-        cash REAL NOT NULL,
-        initial_balance REAL NOT NULL,
-        enabled INTEGER NOT NULL DEFAULT 0,
-        emergency INTEGER NOT NULL DEFAULT 0
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS trades (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        symbol TEXT NOT NULL,
-        entry REAL NOT NULL,
-        quantity REAL NOT NULL,
-        stop REAL NOT NULL,
-        target REAL NOT NULL,
-        highest REAL NOT NULL,
-        entry_fee REAL NOT NULL,
-        status TEXT NOT NULL,
-        exit REAL,
-        exit_fee REAL DEFAULT 0,
-        pnl REAL DEFAULT 0,
-        reason TEXT,
-        opened_at TEXT NOT NULL,
-        closed_at TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS signals (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        symbol TEXT NOT NULL,
-        price REAL NOT NULL,
-        direction TEXT NOT NULL,
-        agreement INTEGER NOT NULL,
-        strategies TEXT NOT NULL,
-        created_at TEXT NOT NULL
-    )
-    """)
-
-    cur.execute("""
-    INSERT OR IGNORE INTO settings
-    (id, cash, initial_balance, enabled, emergency)
-    VALUES (1, ?, ?, 0, 0)
-    """, (INITIAL_BALANCE, INITIAL_BALANCE))
-
-    con.commit()
-    con.close()
-
-
-def get_settings():
-    con = db()
-    row = con.execute(
-        "SELECT * FROM settings WHERE id=1"
-    ).fetchone()
-    con.close()
-    return dict(row)
-
-
-def update_settings(**values):
-    allowed = {"cash", "enabled", "emergency"}
-    fields = {k: v for k, v in values.items() if k in allowed}
-    if not fields:
-        return
-
-    con = db()
-    sql = ", ".join(f"{k}=?" for k in fields)
-    con.execute(
-        f"UPDATE settings SET {sql} WHERE id=1",
-        list(fields.values())
-    )
-    con.commit()
-    con.close()
-
-
-# =====================================================
-# دریافت اطلاعات بازار
-# =====================================================
-
-BINANCE_URL = "https://api.binance.com/api/v3/klines"
-
-
-def get_candles(symbol):
-    response = requests.get(
-        BINANCE_URL,
-        params={
-            "symbol": symbol,
-            "interval": TIMEFRAME,
-            "limit": 150
-        },
-        timeout=12,
-        headers={"User-Agent": "MAHORA-AI/1.0"}
-    )
-    response.raise_for_status()
-    raw = response.json()
-
-    # کندل آخر هنوز ممکن است بسته نشده باشد.
-    raw = raw[:-1]
-
-    return [{
-        "time": int(x[0]),
-        "open": float(x[1]),
-        "high": float(x[2]),
-        "low": float(x[3]),
-        "close": float(x[4]),
-        "volume": float(x[5])
-    } for x in raw]
-
-
-# =====================================================
-# اندیکاتورها
-# =====================================================
-
-def ema(values, period):
-    if len(values) < period:
-        return None
-
-    result = sum(values[:period]) / period
-    alpha = 2 / (period + 1)
-
-    for value in values[period:]:
-        result = value * alpha + result * (1 - alpha)
-
-    return result
-
-
-def sma(values, period):
-    if len(values) < period:
-        return None
-    return sum(values[-period:]) / period
-
-
-def rsi(values, period=14):
-    if len(values) <= period:
-        return None
-
-    changes = [
-        values[i] - values[i - 1]
-        for i in range(1, len(values))
-    ]
-
-    gains = [max(x, 0) for x in changes[-period:]]
-    losses = [max(-x, 0) for x in changes[-period:]]
-
-    avg_gain = sum(gains) / period
-    avg_loss = sum(losses) / period
-
-    if avg_loss == 0:
-        return 100
-
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
-
-def atr(candles, period=14):
-    if len(candles) <= period:
-        return None
-
-    ranges = []
-
-    for i in range(1, len(candles)):
-        c = candles[i]
-        previous = candles[i - 1]["close"]
-
-        ranges.append(max(
-            c["high"] - c["low"],
-            abs(c["high"] - previous),
-            abs(c["low"] - previous)
-        ))
-
-    return sum(ranges[-period:]) / period
-
-
-def macd(values):
-    fast = ema(values, 12)
-    slow = ema(values, 26)
-
-    if fast is None or slow is None:
-        return None
-
-    return fast - slow
-
-
-def bollinger(values, period=20):
-    if len(values) < period:
-        return None, None
-
-    sample = values[-period:]
-    middle = sum(sample) / period
-
-    variance = sum(
-        (x - middle) ** 2 for x in sample
-    ) / period
-
-    deviation = variance ** 0.5
-
-    return middle + 2 * deviation, middle - 2 * deviation
-
-
-def stochastic(candles, period=14):
-    sample = candles[-period:]
-    highest = max(x["high"] for x in sample)
-    lowest = min(x["low"] for x in sample)
-    close = candles[-1]["close"]
-
-    if highest == lowest:
-        return 50
-
-    return 100 * (close - lowest) / (highest - lowest)
-
-
-# =====================================================
-# ده استراتژی تحلیلی
-# =====================================================
-
-def analyze(candles):
-    closes = [x["close"] for x in candles]
-    volumes = [x["volume"] for x in candles]
-
-    price = closes[-1]
-    votes = []
-
-    e9 = ema(closes, 9)
-    e21 = ema(closes, 21)
-    e50 = ema(closes, 50)
-    e100 = ema(closes, 100)
-    r = rsi(closes)
-    m = macd(closes)
-    upper, lower = bollinger(closes)
-    stoch = stochastic(candles)
-
-    # 1. تقاطع میانگین نمایی
-    if e9 and e21:
-        votes.append(("تقاطع EMA", 1 if e9 > e21 else -1))
-
-    # 2. روند EMA50
-    if e50:
-        votes.append(("روند EMA50", 1 if price > e50 else -1))
-
-    # 3. روند EMA100
-    if e100:
-        votes.append(("روند EMA100", 1 if price > e100 else -1))
-
-    # 4. شاخص RSI
-    if r is not None:
-        votes.append((
-            "شاخص RSI",
-            1 if 50 < r < 70 else (-1 if r > 70 or r < 40 else 0)
-        ))
-
-    # 5. مکدی
-    if m is not None:
-        votes.append(("MACD", 1 if m > 0 else -1))
-
-    # 6. شکست سقف و کف
-    recent_high = max(x["high"] for x in candles[-21:-1])
-    recent_low = min(x["low"] for x in candles[-21:-1])
-
-    votes.append((
-        "شکست قیمت",
-        1 if price > recent_high else (
-            -1 if price < recent_low else 0
-        )
-    ))
-
-    # 7. باند بولینگر
-    if upper and lower:
-        votes.append((
-            "بولینگر",
-            1 if price < lower else (
-                -1 if price > upper else 0
-            )
-        ))
-
-    # 8. استوکاستیک
-    votes.append((
-        "استوکاستیک",
-        1 if stoch < 20 else (-1 if stoch > 80 else 0)
-    ))
-
-    # 9. مومنتوم
-    momentum = closes[-1] - closes[-6]
-    votes.append((
-        "مومنتوم",
-        1 if momentum > 0 else (-1 if momentum < 0 else 0)
-    ))
-
-    # 10. حجم معاملات
-    average_volume = sma(volumes[:-1], 20)
-    if average_volume and average_volume > 0:
-        volume_signal = (
-            1 if volumes[-1] > average_volume * 1.5
-            and closes[-1] > candles[-2]["close"]
-            else 0
-        )
-        votes.append(("حجم معاملات", volume_signal))
-
-    buy_count = sum(1 for _, v in votes if v == 1)
-    sell_count = sum(1 for _, v in votes if v == -1)
-
-    direction = "WAIT"
-
-    if buy_count >= MIN_AGREEMENT and buy_count > sell_count:
-        direction = "BUY"
-    elif sell_count >= MIN_AGREEMENT and sell_count > buy_count:
-        direction = "SELL"
-
-    return {
-        "price": price,
-        "direction": direction,
-        "buy_votes": buy_count,
-        "sell_votes": sell_count,
-        "agreement": max(buy_count, sell_count),
-        "strategies": [
-            name for name, vote in votes
-            if vote == (1 if direction == "BUY" else -1)
-        ] if direction != "WAIT" else [],
-        "atr": atr(candles),
-        "rsi": r,
-        "stoch": stoch
-    }
-
-
-# =====================================================
-# موتور معاملات آزمایشی
-# =====================================================
-
-def open_positions():
-    con = db()
-    rows = con.execute(
-        "SELECT * FROM trades WHERE status='OPEN'"
-    ).fetchall()
-    con.close()
-    return [dict(x) for x in rows]
-
-
-def log_signal(symbol, result):
-    con = db()
-    con.execute("""
-    INSERT INTO signals
-    (symbol, price, direction, agreement, strategies, created_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-    """, (
-        symbol,
-        result["price"],
-        result["direction"],
-        result["agreement"],
-        "، ".join(result["strategies"]),
-        datetime.now(timezone.utc).isoformat()
-    ))
-    con.commit()
-    con.close()
-
-
-def paper_buy(symbol, result):
-    settings = get_settings()
-    positions = open_positions()
-
-    if len(positions) >= MAX_OPEN_TRADES:
-        return
-
-    if any(p["symbol"] == symbol for p in positions):
-        return
-
-    price = result["price"]
-    volatility = result["atr"]
-
-    if not volatility or volatility <= 0:
-        return
-
-    entry = price * (1 + SLIPPAGE)
-    stop = entry - 1.5 * volatility
-    target = entry + 2.2 * volatility
-
-    if stop <= 0 or target <= entry:
-        return
-
-    risk_budget = settings["cash"] * RISK_PER_TRADE
-    risk_per_unit = (entry - stop) * USDT_TOMAN
-
-    if risk_per_unit <= 0:
-        return
-
-    quantity_by_risk = risk_budget / risk_per_unit
-
-    available_usdt = settings["cash"] / USDT_TOMAN
-    quantity_by_cash = available_usdt / (
-        entry * (1 + FEE_RATE)
-    )
-
-    quantity = min(quantity_by_risk, quantity_by_cash)
-
-    if quantity <= 0:
-        return
-
-    notional_toman = quantity * entry * USDT_TOMAN
-    entry_fee = notional_toman * FEE_RATE
-    total_cost = notional_toman + entry_fee
-
-    if total_cost > settings["cash"]:
-        return
-
-    con = db()
-
-    con.execute("""
-    INSERT INTO trades (
-        symbol, entry, quantity, stop, target,
-        highest, entry_fee, status, opened_at
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'OPEN', ?)
-    """, (
-        symbol, entry, quantity, stop, target,
-        entry, entry_fee,
-        datetime.now(timezone.utc).isoformat()
-    ))
-
-    con.execute(
-        "UPDATE settings SET cash=cash-? WHERE id=1",
-        (total_cost,)
-    )
-
-    con.commit()
-    con.close()
-
-
-def close_trade(trade, price, reason):
-    exit_price = price * (1 - SLIPPAGE)
-
-    proceeds = (
-        trade["quantity"] * exit_price * USDT_TOMAN
-    )
-
-    exit_fee = proceeds * FEE_RATE
-
-    entry_cost = (
-        trade["entry"] * trade["quantity"] * USDT_TOMAN
-    )
-
-    pnl = (
-        proceeds - exit_fee
-        - entry_cost - trade["entry_fee"]
-    )
-
-    con = db()
-
-    con.execute("""
-    UPDATE trades
-    SET status='CLOSED',
-        exit=?,
-        exit_fee=?,
-        pnl=?,
-        reason=?,
-        closed_at=?
-    WHERE id=? AND status='OPEN'
-    """, (
-        exit_price,
-        exit_fee,
-        pnl,
-        reason,
-        datetime.now(timezone.utc).isoformat(),
-        trade["id"]
-    ))
-
-    con.execute(
-        "UPDATE settings SET cash=cash+? WHERE id=1",
-        (proceeds - exit_fee,)
-    )
-
-    con.commit()
-    con.close()
-
-
-def manage_trade(trade, result):
-    price = result["price"]
-    volatility = result["atr"]
-
-    if not volatility or volatility <= 0:
-        return
-
-    # فقط افزایش حد ضرر در معامله خرید
-    highest = max(trade["highest"], price)
-
-    trailing_stop = highest - 1.5 * volatility
-    new_stop = max(trade["stop"], trailing_stop)
-
-    con = db()
-    con.execute(
-        "UPDATE trades SET highest=?, stop=? WHERE id=?",
-        (highest, new_stop, trade["id"])
-    )
-    con.commit()
-    con.close()
-
-    trade["stop"] = new_stop
-
-    if price <= new_stop:
-        close_trade(trade, price, "حد ضرر پویا")
-    elif price >= trade["target"]:
-        close_trade(trade, price, "حد سود")
-    elif result["direction"] == "SELL" and result["agreement"] >= 8:
-        close_trade(trade, price, "تغییر قوی سیگنال")
-
-
-# =====================================================
-# چرخه تحلیل بازار
-# =====================================================
-
-market_cache = {}
-signal_cache = {}
-last_candle = {}
-
-
-def process_market():
-    settings = get_settings()
-
-    if settings["emergency"]:
-        return
-
-    for symbol in SYMBOLS:
-        try:
-            candles = get_candles(symbol)
-
-            if len(candles) < 110:
-                continue
-
-            result = analyze(candles)
-
-            market_cache[symbol] = {
-                "price": result["price"],
-                "updated": datetime.now(timezone.utc).isoformat()
-            }
-
-            signal_cache[symbol] = result
-            log_signal(symbol, result)
-
-            positions = open_positions()
-
-            for trade in positions:
-                if trade["symbol"] == symbol:
-                    manage_trade(trade, result)
-
-            settings = get_settings()
-
-            if not settings["enabled"] or settings["emergency"]:
-                continue
-
-            # فقط یک ورود در هر کندل بسته‌شده
-            candle_time = candles[-1]["time"]
-
-            if last_candle.get(symbol) == candle_time:
-                continue
-
-            if result["direction"] == "BUY":
-                paper_buy(symbol, result)
-                last_candle[symbol] = candle_time
-
-        except Exception as exc:
-            log.warning("%s market error: %s", symbol, exc)
-
-
-async def engine_loop():
-    while True:
-        try:
-            await asyncio.to_thread(process_market)
-        except Exception:
-            log.exception("Engine cycle failed")
-
-        await asyncio.sleep(LOOP_SECONDS)
-
-
-@app.on_event("startup")
-async def start_engine():
-    init_db()
-    asyncio.create_task(engine_loop())
-
-
-# =====================================================
-# API حساب و بازار
-# =====================================================
-
-@app.get("/api/status")
-def status():
-    settings = get_settings()
-    positions = open_positions()
-
-    return {
-        "name": APP_NAME,
-        "enabled": bool(settings["enabled"]),
-        "emergency": bool(settings["emergency"]),
-        "mode": "PAPER",
-        "real_trading": False,
-        "cash_toman": round(settings["cash"], 2),
-        "initial_toman": settings["initial_balance"],
-        "open_positions": len(positions),
-        "symbols": SYMBOLS,
-        "timeframe": TIMEFRAME
-    }
-
-
-@app.get("/api/market")
-def market():
-    return {
-        "market": market_cache,
-        "signals": signal_cache
-    }
-
-
-@app.get("/api/trades")
-def trades():
-    con = db()
-    rows = con.execute(
-        "SELECT * FROM trades ORDER BY id DESC LIMIT 200"
-    ).fetchall()
-    con.close()
-    return [dict(x) for x in rows]
-
-
-@app.get("/api/summary")
-def summary():
-    con = db()
-
-    closed = con.execute("""
-        SELECT COUNT(*) AS total,
-               COALESCE(SUM(pnl),0) AS pnl,
-               SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) AS wins
-        FROM trades WHERE status='CLOSED'
-    """).fetchone()
-
-    opened = con.execute("""
-        SELECT COUNT(*) AS total
-        FROM trades WHERE status='OPEN'
-    """).fetchone()
-
-    con.close()
-
-    total = closed["total"] or 0
-    wins = closed["wins"] or 0
-
-    return {
-        "closed_trades": total,
-        "open_trades": opened["total"],
-        "net_pnl_toman": round(closed["pnl"], 2),
-        "win_rate_percent": round(
-            wins / total * 100, 2
-        ) if total else 0
-    }
-
-
-# =====================================================
-# کنترل ربات
-# =====================================================
-
-@app.post("/api/start")
-def start_bot():
-    update_settings(enabled=1, emergency=0)
-    return {"message": "ربات آزمایشی فعال شد"}
-
-
-@app.post("/api/pause")
-def pause_bot():
-    update_settings(enabled=0)
-    return {"message": "ورودهای جدید متوقف شد"}
-
-
-@app.post("/api/emergency")
-def emergency_stop():
-    update_settings(enabled=0, emergency=1)
-    return {
-        "message": "توقف اضطراری فعال شد؛ ورود جدید ممنوع است"
-    }
-
-
-@app.post("/api/emergency/reset")
-def reset_emergency():
-    update_settings(emergency=0, enabled=0)
-    return {
-        "message": "توقف اضطراری بازنشانی شد؛ ربات همچنان خاموش است"
-    }
-
-
-# =====================================================
-# داشبورد فارسی
-# =====================================================
-
-HTML = r"""
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAHORA AI</title>
+<title>MAHORA AI GLOBAL</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#0b1020;color:#eef2ff;
-font-family:Tahoma,Arial,sans-serif}
-header{padding:20px;background:#121a2e;border-bottom:1px solid #26334d}
-h1{margin:0;color:#e5bd70;font-size:24px}
-small{color:#9eacc5}
-main{max-width:1100px;margin:auto;padding:15px}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.card{background:#151f35;border:1px solid #263653;
-border-radius:14px;padding:15px;margin-bottom:12px}
-.label{color:#9eacc5;font-size:12px}
-.value{font-size:21px;font-weight:bold;margin-top:8px}
-button{border:0;border-radius:9px;padding:12px 15px;
-font-weight:bold;margin:4px;cursor:pointer}
-.start{background:#13875e;color:white}
-.pause{background:#d39a36;color:#111}
-.stop{background:#c83c50;color:white}
-.reset{background:#435777;color:white}
-table{width:100%;border-collapse:collapse;font-size:12px}
-td,th{padding:10px;border-bottom:1px solid #293651;text-align:right}
-.green{color:#42d69a}
-.red{color:#ff697d}
-.status{color:#e5bd70}
-.section{margin-top:22px}
-@media(max-width:520px){.grid{grid-template-columns:1fr}}
+body{margin:0;background:#080d18;color:#edf3ff;font-family:Tahoma,Arial;padding:15px}
+.wrap{max-width:950px;margin:auto}
+header,.card{background:#111c2c;border:1px solid #293950;border-radius:15px;padding:17px;margin-bottom:13px}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+h1{color:#e8bd62;font-size:23px;margin:0}
+h2{font-size:15px;color:#e8bd62}
+.small{color:#91a2bb;font-size:11px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.metric{background:#172438;padding:15px;border-radius:12px}
+.value{font-size:21px;margin-top:10px;font-weight:bold}
+.green{color:#29c58a}.red{color:#ff6577}
+button{border:0;border-radius:9px;padding:12px;margin:4px;font-weight:bold;cursor:pointer}
+.start{background:#e8bd62;color:#111}
+.stop{background:#273b55;color:white}
+.reset{background:#572b39;color:white}
+.item{padding:11px;border-bottom:1px solid #293950;font-size:12px}
+.strategies{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.strategy{background:#172438;padding:12px;border-radius:9px;font-size:12px}
+table{width:100%;font-size:11px;border-collapse:collapse}
+td,th{text-align:right;padding:10px;border-bottom:1px solid #293950}
+.notice{background:#302817;border:1px solid #755c2e;padding:13px;border-radius:10px;font-size:11px;line-height:2}
+@media(max-width:500px){.grid,.strategies{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<div class="wrap">
+
 <header>
+<div>
 <h1>MAHORA AI</h1>
-<small>سامانه هوشمند معاملات آزمایشی</small>
-</header>
-<main>
-<div class="card">
-<div class="label">وضعیت موتور معاملاتی</div>
-<div class="value status" id="state">در حال اتصال...</div>
-<div class="label">حالت: آزمایشی | تایم‌فریم: ۱۵ دقیقه</div>
+<div class="small">GLOBAL EDITION · SMART TRADING</div>
 </div>
+<div class="small">PAPER TRADING · 15M</div>
+</header>
 
 <div class="grid">
-<div class="card">
-<div class="label">موجودی نقدی (تومان)</div>
-<div class="value" id="cash">—</div>
+<div class="metric">
+<div class="small">سرمایه آزمایشی</div>
+<div class="value" id="balance">۱۰,۰۰۰,۰۰۰</div>
 </div>
-<div class="card">
-<div class="label">سرمایه اولیه (تومان)</div>
-<div class="value" id="initial">—</div>
+<div class="metric">
+<div class="small">سود و زیان</div>
+<div class="value green" id="profit">۰</div>
 </div>
-<div class="card">
-<div class="label">معاملات باز</div>
-<div class="value" id="opened">—</div>
+<div class="metric">
+<div class="small">تعداد معاملات آزمایشی</div>
+<div class="value" id="count">۰</div>
 </div>
-<div class="card">
-<div class="label">سود و زیان خالص بسته‌شده</div>
-<div class="value" id="pnl">—</div>
-</div>
-<div class="card">
-<div class="label">تعداد معاملات بسته</div>
-<div class="value" id="closed">—</div>
-</div>
-<div class="card">
-<div class="label">درصد معاملات سودده</div>
-<div class="value" id="winrate">—</div>
+<div class="metric">
+<div class="small">تایم‌فریم</div>
+<div class="value">15M</div>
 </div>
 </div>
 
 <div class="card">
-<h3>کنترل ربات</h3>
-<button class="start" onclick="action('/api/start')">شروع معاملات آزمایشی</button>
-<button class="pause" onclick="action('/api/pause')">توقف ورود جدید</button>
-<button class="stop" onclick="action('/api/emergency')">توقف اضطراری</button>
-<button class="reset" onclick="action('/api/emergency/reset')">بازنشانی توقف</button>
-<div id="message" class="label"></div>
+<h2>کنترل سیستم</h2>
+<div id="status" class="small">سیستم متوقف است.</div>
+<button class="start" id="start">شروع آزمایش</button>
+<button class="stop" id="pause" disabled>توقف</button>
+<button class="reset" id="reset">بازنشانی</button>
 </div>
 
-<div class="section card">
-<h3>بازار و سیگنال‌ها</h3>
+<div class="card">
+<h2>موتور هوش مصنوعی</h2>
+<div class="item">تایم‌فریم: ۱۵ دقیقه</div>
+<div class="item">مدیریت ریسک: سقف آزمایشی ۱٪</div>
+<div class="item">حد سود و ضرر: خودکار در موتور متصل</div>
+<div class="item">معاملات واقعی: غیرفعال</div>
+<div class="item">انتخاب سیگنال: نیازمند موتور تحلیل واقعی</div>
+</div>
+
+<div class="card">
+<h2>۱۰ استراتژی MAHORA</h2>
+<div class="strategies">
+<div class="strategy">۱. دنبال‌کننده روند</div>
+<div class="strategy">۲. شکست مقاومت</div>
+<div class="strategy">۳. بازگشت به میانگین</div>
+<div class="strategy">۴. مومنتوم</div>
+<div class="strategy">۵. RSI و واگرایی</div>
+<div class="strategy">۶. MACD</div>
+<div class="strategy">۷. تحلیل حجم</div>
+<div class="strategy">۸. نوسان ATR</div>
+<div class="strategy">۹. ساختار بازار</div>
+<div class="strategy">۱۰. اجماع سیگنال‌ها</div>
+</div>
+</div>
+
+<div class="card">
+<h2>تاریخچه معاملات آزمایشی</h2>
+<div style="overflow-x:auto">
 <table>
-<thead><tr><th>ارز</th><th>قیمت USDT</th><th>سیگنال</th><th>توافق</th></tr></thead>
-<tbody id="market"></tbody>
+<thead><tr><th>زمان</th><th>ارز</th><th>نتیجه</th><th>نوع</th></tr></thead>
+<tbody id="history">
+<tr><td colspan="4">معامله‌ای ثبت نشده است.</td></tr>
+</tbody>
 </table>
 </div>
-
-<div class="section card">
-<h3>معاملات اخیر</h3>
-<table>
-<thead><tr><th>ارز</th><th>ورود</th><th>خروج</th><th>وضعیت</th><th>سود/زیان تومان</th></tr></thead>
-<tbody id="trades"></tbody>
-</table>
 </div>
 
-<div class="label" style="padding:20px;text-align:center">
-MAHORA AI — فقط Paper Trading؛ سفارش واقعی غیرفعال است.
+<div class="notice">
+توجه: این نسخه فقط رابط کاربری و شبیه‌ساز نمایشی است. سود و زیان تصادفی است و نشان‌دهنده عملکرد بازار نیست. برای تحلیل واقعی باید قیمت زنده، موتور استراتژی، محاسبه کارمزد و لغزش، سرور امن و ذخیره پایدار معاملات اضافه شوند. هیچ سفارش واقعی ارسال نمی‌شود.
 </div>
-</main>
+
+</div>
 
 <script>
-const fmt = n => Number(n||0).toLocaleString('fa-IR',{maximumFractionDigits:2});
+(()=>{
+const initial=10000000;
+let balance=initial,profit=0,count=0;
+let running=false,timer=null;
 
-async function api(path,method='GET'){
- const r=await fetch(path,{method});
- if(!r.ok) throw new Error('خطای ارتباط با سرور');
- return await r.json();
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('fa-IR');
+
+function render(){
+$('balance').textContent=fmt(balance);
+$('profit').textContent=(profit>0?'+':'')+fmt(profit);
+$('profit').className='value '+(profit>=0?'green':'red');
+$('count').textContent=fmt(count);
 }
 
-async function action(path){
- try{
-  const r=await api(path,'POST');
-  document.getElementById('message').textContent=r.message;
-  await refresh();
- }catch(e){
-  document.getElementById('message').textContent=e.message;
- }
+function trade(){
+if(!running)return;
+
+const result=(Math.random()-.48)*balance*.02;
+balance+=result;
+profit+=result;
+count++;
+
+const tr=document.createElement('tr');
+[
+new Date().toLocaleTimeString('fa-IR'),
+'BTC/USDT',
+(result>=0?'+':'')+fmt(result),
+'آزمایشی'
+].forEach(v=>{
+const td=document.createElement('td');
+td.textContent=v;
+tr.appendChild(td);
+});
+
+const history=$('history');
+if(count===1)history.innerHTML='';
+history.prepend(tr);
+
+while(history.children.length>20)
+history.removeChild(history.lastChild);
+
+render();
 }
 
-async function refresh(){
- try{
-  const [s,m,t,p]=await Promise.all([
-   api('/api/status'),
-   api('/api/market'),
-   api('/api/trades'),
-   api('/api/summary')
-  ]);
-
-  document.getElementById('state').textContent=
-   s.emergency?'توقف اضطراری':
-   s.enabled?'فعال — آزمایشی':'متوقف';
-
-  document.getElementById('cash').textContent=fmt(s.cash_toman);
-  document.getElementById('initial').textContent=fmt(s.initial_toman);
-  document.getElementById('opened').textContent=fmt(p.open_trades);
-  document.getElementById('closed').textContent=fmt(p.closed_trades);
-  document.getElementById('pnl').textContent=fmt(p.net_pnl_toman);
-  document.getElementById('winrate').textContent=fmt(p.win_rate_percent)+'٪';
-
-  const marketRows=Object.entries(m.market||{}).map(([symbol,x])=>{
-   const signal=m.signals?.[symbol];
-   const dir=signal?.direction||'WAIT';
-   const cls=dir==='BUY'?'green':dir==='SELL'?'red':'';
-   return `<tr><td>${symbol}</td><td>${fmt(x.price)}</td>
-   <td class="${cls}">${dir}</td>
-   <td>${fmt(signal?.agreement||0)} از ۱۰</td></tr>`;
-  }).join('');
-
-  document.getElementById('market').innerHTML=
-   marketRows||'<tr><td colspan="4">در انتظار دریافت داده بازار...</td></tr>';
-
-  document.getElementById('trades').innerHTML=
-   t.slice(0,30).map(x=>`
-   <tr>
-   <td>${x.symbol}</td>
-   <td>${fmt(x.entry)}</td>
-   <td>${x.exit?fmt(x.exit):'—'}</td>
-   <td>${x.status==='OPEN'?'باز':'بسته'}</td>
-   <td class="${x.pnl>=0?'green':'red'}">${fmt(x.pnl)}</td>
-   </tr>`).join('')||'<tr><td colspan="5">هنوز معامله‌ای ثبت نشده است</td></tr>';
-
- }catch(e){
-  document.getElementById('state').textContent='ارتباط با سرور برقرار نیست';
- }
+function stop(){
+running=false;
+clearInterval(timer);
+timer=null;
+$('start').disabled=false;
+$('pause').disabled=true;
+$('status').textContent='سیستم متوقف است.';
 }
 
-refresh();
-setInterval(refresh,10000);
+$('start').onclick=()=>{
+if(running)return;
+running=true;
+$('start').disabled=true;
+$('pause').disabled=false;
+$('status').textContent='شبیه‌سازی نمایشی فعال است.';
+trade();
+timer=setInterval(trade,5000);
+};
+
+$('pause').onclick=stop;
+
+$('reset').onclick=()=>{
+stop();
+balance=initial;
+profit=0;
+count=0;
+$('history').innerHTML=
+'<tr><td colspan="4">معامله‌ای ثبت نشده است.</td></tr>';
+render();
+};
+
+render();
+})();
 </script>
 </body>
 </html>
-"""
-
-
-@app.get("/", response_class=HTMLResponse)
-def dashboard():
-    return HTML
-
-
-# =====================================================
-# اجرای مستقیم برای توسعه
-# =====================================================
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000
-    )

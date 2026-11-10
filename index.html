@@ -1,556 +1,939 @@
 
+import os
+import time
+import sqlite3
+import asyncio
+import logging
+from datetime import datetime, timezone
+
+import requests
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
+from pydantic import BaseModel
+
+# =====================================================
+# تنظیمات MAHORA AI
+# =====================================================
+
+APP_NAME = "MAHORA AI"
+DB_FILE = os.getenv("DB_FILE", "mahora.db")
+
+INITIAL_BALANCE = float(os.getenv("PAPER_BALANCE", "10000000"))
+USDT_TOMAN = float(os.getenv("USDT_TOMAN", "100000"))
+FEE_RATE = 0.001
+SLIPPAGE = 0.0005
+RISK_PER_TRADE = 0.01
+MAX_OPEN_TRADES = 3
+MIN_AGREEMENT = 6
+TIMEFRAME = "15m"
+LOOP_SECONDS = 60
+
+SYMBOLS = [
+    "BTCUSDT", "ETHUSDT", "XRPUSDT",
+    "BNBUSDT", "SOLUSDT", "DOGEUSDT",
+    "PEPEUSDT"
+]
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger("MAHORA")
+
+app = FastAPI(
+    title="MAHORA AI",
+    version="1.0.0",
+    description="سامانه معاملات آزمایشی ماهورا"
+)
+
+# =====================================================
+# دیتابیس
+# =====================================================
+
+def db():
+    con = sqlite3.connect(DB_FILE, timeout=20)
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def init_db():
+    con = db()
+    cur = con.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY CHECK(id=1),
+        cash REAL NOT NULL,
+        initial_balance REAL NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 0,
+        emergency INTEGER NOT NULL DEFAULT 0
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS trades (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        entry REAL NOT NULL,
+        quantity REAL NOT NULL,
+        stop REAL NOT NULL,
+        target REAL NOT NULL,
+        highest REAL NOT NULL,
+        entry_fee REAL NOT NULL,
+        status TEXT NOT NULL,
+        exit REAL,
+        exit_fee REAL DEFAULT 0,
+        pnl REAL DEFAULT 0,
+        reason TEXT,
+        opened_at TEXT NOT NULL,
+        closed_at TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS signals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        symbol TEXT NOT NULL,
+        price REAL NOT NULL,
+        direction TEXT NOT NULL,
+        agreement INTEGER NOT NULL,
+        strategies TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """)
+
+    cur.execute("""
+    INSERT OR IGNORE INTO settings
+    (id, cash, initial_balance, enabled, emergency)
+    VALUES (1, ?, ?, 0, 0)
+    """, (INITIAL_BALANCE, INITIAL_BALANCE))
+
+    con.commit()
+    con.close()
+
+
+def get_settings():
+    con = db()
+    row = con.execute(
+        "SELECT * FROM settings WHERE id=1"
+    ).fetchone()
+    con.close()
+    return dict(row)
+
+
+def update_settings(**values):
+    allowed = {"cash", "enabled", "emergency"}
+    fields = {k: v for k, v in values.items() if k in allowed}
+    if not fields:
+        return
+
+    con = db()
+    sql = ", ".join(f"{k}=?" for k in fields)
+    con.execute(
+        f"UPDATE settings SET {sql} WHERE id=1",
+        list(fields.values())
+    )
+    con.commit()
+    con.close()
+
+
+# =====================================================
+# دریافت اطلاعات بازار
+# =====================================================
+
+BINANCE_URL = "https://api.binance.com/api/v3/klines"
+
+
+def get_candles(symbol):
+    response = requests.get(
+        BINANCE_URL,
+        params={
+            "symbol": symbol,
+            "interval": TIMEFRAME,
+            "limit": 150
+        },
+        timeout=12,
+        headers={"User-Agent": "MAHORA-AI/1.0"}
+    )
+    response.raise_for_status()
+    raw = response.json()
+
+    # کندل آخر هنوز ممکن است بسته نشده باشد.
+    raw = raw[:-1]
+
+    return [{
+        "time": int(x[0]),
+        "open": float(x[1]),
+        "high": float(x[2]),
+        "low": float(x[3]),
+        "close": float(x[4]),
+        "volume": float(x[5])
+    } for x in raw]
+
+
+# =====================================================
+# اندیکاتورها
+# =====================================================
+
+def ema(values, period):
+    if len(values) < period:
+        return None
+
+    result = sum(values[:period]) / period
+    alpha = 2 / (period + 1)
+
+    for value in values[period:]:
+        result = value * alpha + result * (1 - alpha)
+
+    return result
+
+
+def sma(values, period):
+    if len(values) < period:
+        return None
+    return sum(values[-period:]) / period
+
+
+def rsi(values, period=14):
+    if len(values) <= period:
+        return None
+
+    changes = [
+        values[i] - values[i - 1]
+        for i in range(1, len(values))
+    ]
+
+    gains = [max(x, 0) for x in changes[-period:]]
+    losses = [max(-x, 0) for x in changes[-period:]]
+
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+
+    if avg_loss == 0:
+        return 100
+
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+
+def atr(candles, period=14):
+    if len(candles) <= period:
+        return None
+
+    ranges = []
+
+    for i in range(1, len(candles)):
+        c = candles[i]
+        previous = candles[i - 1]["close"]
+
+        ranges.append(max(
+            c["high"] - c["low"],
+            abs(c["high"] - previous),
+            abs(c["low"] - previous)
+        ))
+
+    return sum(ranges[-period:]) / period
+
+
+def macd(values):
+    fast = ema(values, 12)
+    slow = ema(values, 26)
+
+    if fast is None or slow is None:
+        return None
+
+    return fast - slow
+
+
+def bollinger(values, period=20):
+    if len(values) < period:
+        return None, None
+
+    sample = values[-period:]
+    middle = sum(sample) / period
+
+    variance = sum(
+        (x - middle) ** 2 for x in sample
+    ) / period
+
+    deviation = variance ** 0.5
+
+    return middle + 2 * deviation, middle - 2 * deviation
+
+
+def stochastic(candles, period=14):
+    sample = candles[-period:]
+    highest = max(x["high"] for x in sample)
+    lowest = min(x["low"] for x in sample)
+    close = candles[-1]["close"]
+
+    if highest == lowest:
+        return 50
+
+    return 100 * (close - lowest) / (highest - lowest)
+
+
+# =====================================================
+# ده استراتژی تحلیلی
+# =====================================================
+
+def analyze(candles):
+    closes = [x["close"] for x in candles]
+    volumes = [x["volume"] for x in candles]
+
+    price = closes[-1]
+    votes = []
+
+    e9 = ema(closes, 9)
+    e21 = ema(closes, 21)
+    e50 = ema(closes, 50)
+    e100 = ema(closes, 100)
+    r = rsi(closes)
+    m = macd(closes)
+    upper, lower = bollinger(closes)
+    stoch = stochastic(candles)
+
+    # 1. تقاطع میانگین نمایی
+    if e9 and e21:
+        votes.append(("تقاطع EMA", 1 if e9 > e21 else -1))
+
+    # 2. روند EMA50
+    if e50:
+        votes.append(("روند EMA50", 1 if price > e50 else -1))
+
+    # 3. روند EMA100
+    if e100:
+        votes.append(("روند EMA100", 1 if price > e100 else -1))
+
+    # 4. شاخص RSI
+    if r is not None:
+        votes.append((
+            "شاخص RSI",
+            1 if 50 < r < 70 else (-1 if r > 70 or r < 40 else 0)
+        ))
+
+    # 5. مکدی
+    if m is not None:
+        votes.append(("MACD", 1 if m > 0 else -1))
+
+    # 6. شکست سقف و کف
+    recent_high = max(x["high"] for x in candles[-21:-1])
+    recent_low = min(x["low"] for x in candles[-21:-1])
+
+    votes.append((
+        "شکست قیمت",
+        1 if price > recent_high else (
+            -1 if price < recent_low else 0
+        )
+    ))
+
+    # 7. باند بولینگر
+    if upper and lower:
+        votes.append((
+            "بولینگر",
+            1 if price < lower else (
+                -1 if price > upper else 0
+            )
+        ))
+
+    # 8. استوکاستیک
+    votes.append((
+        "استوکاستیک",
+        1 if stoch < 20 else (-1 if stoch > 80 else 0)
+    ))
+
+    # 9. مومنتوم
+    momentum = closes[-1] - closes[-6]
+    votes.append((
+        "مومنتوم",
+        1 if momentum > 0 else (-1 if momentum < 0 else 0)
+    ))
+
+    # 10. حجم معاملات
+    average_volume = sma(volumes[:-1], 20)
+    if average_volume and average_volume > 0:
+        volume_signal = (
+            1 if volumes[-1] > average_volume * 1.5
+            and closes[-1] > candles[-2]["close"]
+            else 0
+        )
+        votes.append(("حجم معاملات", volume_signal))
+
+    buy_count = sum(1 for _, v in votes if v == 1)
+    sell_count = sum(1 for _, v in votes if v == -1)
+
+    direction = "WAIT"
+
+    if buy_count >= MIN_AGREEMENT and buy_count > sell_count:
+        direction = "BUY"
+    elif sell_count >= MIN_AGREEMENT and sell_count > buy_count:
+        direction = "SELL"
+
+    return {
+        "price": price,
+        "direction": direction,
+        "buy_votes": buy_count,
+        "sell_votes": sell_count,
+        "agreement": max(buy_count, sell_count),
+        "strategies": [
+            name for name, vote in votes
+            if vote == (1 if direction == "BUY" else -1)
+        ] if direction != "WAIT" else [],
+        "atr": atr(candles),
+        "rsi": r,
+        "stoch": stoch
+    }
+
+
+# =====================================================
+# موتور معاملات آزمایشی
+# =====================================================
+
+def open_positions():
+    con = db()
+    rows = con.execute(
+        "SELECT * FROM trades WHERE status='OPEN'"
+    ).fetchall()
+    con.close()
+    return [dict(x) for x in rows]
+
+
+def log_signal(symbol, result):
+    con = db()
+    con.execute("""
+    INSERT INTO signals
+    (symbol, price, direction, agreement, strategies, created_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+    """, (
+        symbol,
+        result["price"],
+        result["direction"],
+        result["agreement"],
+        "، ".join(result["strategies"]),
+        datetime.now(timezone.utc).isoformat()
+    ))
+    con.commit()
+    con.close()
+
+
+def paper_buy(symbol, result):
+    settings = get_settings()
+    positions = open_positions()
+
+    if len(positions) >= MAX_OPEN_TRADES:
+        return
+
+    if any(p["symbol"] == symbol for p in positions):
+        return
+
+    price = result["price"]
+    volatility = result["atr"]
+
+    if not volatility or volatility <= 0:
+        return
+
+    entry = price * (1 + SLIPPAGE)
+    stop = entry - 1.5 * volatility
+    target = entry + 2.2 * volatility
+
+    if stop <= 0 or target <= entry:
+        return
+
+    risk_budget = settings["cash"] * RISK_PER_TRADE
+    risk_per_unit = (entry - stop) * USDT_TOMAN
+
+    if risk_per_unit <= 0:
+        return
+
+    quantity_by_risk = risk_budget / risk_per_unit
+
+    available_usdt = settings["cash"] / USDT_TOMAN
+    quantity_by_cash = available_usdt / (
+        entry * (1 + FEE_RATE)
+    )
+
+    quantity = min(quantity_by_risk, quantity_by_cash)
+
+    if quantity <= 0:
+        return
+
+    notional_toman = quantity * entry * USDT_TOMAN
+    entry_fee = notional_toman * FEE_RATE
+    total_cost = notional_toman + entry_fee
+
+    if total_cost > settings["cash"]:
+        return
+
+    con = db()
+
+    con.execute("""
+    INSERT INTO trades (
+        symbol, entry, quantity, stop, target,
+        highest, entry_fee, status, opened_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'OPEN', ?)
+    """, (
+        symbol, entry, quantity, stop, target,
+        entry, entry_fee,
+        datetime.now(timezone.utc).isoformat()
+    ))
+
+    con.execute(
+        "UPDATE settings SET cash=cash-? WHERE id=1",
+        (total_cost,)
+    )
+
+    con.commit()
+    con.close()
+
+
+def close_trade(trade, price, reason):
+    exit_price = price * (1 - SLIPPAGE)
+
+    proceeds = (
+        trade["quantity"] * exit_price * USDT_TOMAN
+    )
+
+    exit_fee = proceeds * FEE_RATE
+
+    entry_cost = (
+        trade["entry"] * trade["quantity"] * USDT_TOMAN
+    )
+
+    pnl = (
+        proceeds - exit_fee
+        - entry_cost - trade["entry_fee"]
+    )
+
+    con = db()
+
+    con.execute("""
+    UPDATE trades
+    SET status='CLOSED',
+        exit=?,
+        exit_fee=?,
+        pnl=?,
+        reason=?,
+        closed_at=?
+    WHERE id=? AND status='OPEN'
+    """, (
+        exit_price,
+        exit_fee,
+        pnl,
+        reason,
+        datetime.now(timezone.utc).isoformat(),
+        trade["id"]
+    ))
+
+    con.execute(
+        "UPDATE settings SET cash=cash+? WHERE id=1",
+        (proceeds - exit_fee,)
+    )
+
+    con.commit()
+    con.close()
+
+
+def manage_trade(trade, result):
+    price = result["price"]
+    volatility = result["atr"]
+
+    if not volatility or volatility <= 0:
+        return
+
+    # فقط افزایش حد ضرر در معامله خرید
+    highest = max(trade["highest"], price)
+
+    trailing_stop = highest - 1.5 * volatility
+    new_stop = max(trade["stop"], trailing_stop)
+
+    con = db()
+    con.execute(
+        "UPDATE trades SET highest=?, stop=? WHERE id=?",
+        (highest, new_stop, trade["id"])
+    )
+    con.commit()
+    con.close()
+
+    trade["stop"] = new_stop
+
+    if price <= new_stop:
+        close_trade(trade, price, "حد ضرر پویا")
+    elif price >= trade["target"]:
+        close_trade(trade, price, "حد سود")
+    elif result["direction"] == "SELL" and result["agreement"] >= 8:
+        close_trade(trade, price, "تغییر قوی سیگنال")
+
+
+# =====================================================
+# چرخه تحلیل بازار
+# =====================================================
+
+market_cache = {}
+signal_cache = {}
+last_candle = {}
+
+
+def process_market():
+    settings = get_settings()
+
+    if settings["emergency"]:
+        return
+
+    for symbol in SYMBOLS:
+        try:
+            candles = get_candles(symbol)
+
+            if len(candles) < 110:
+                continue
+
+            result = analyze(candles)
+
+            market_cache[symbol] = {
+                "price": result["price"],
+                "updated": datetime.now(timezone.utc).isoformat()
+            }
+
+            signal_cache[symbol] = result
+            log_signal(symbol, result)
+
+            positions = open_positions()
+
+            for trade in positions:
+                if trade["symbol"] == symbol:
+                    manage_trade(trade, result)
+
+            settings = get_settings()
+
+            if not settings["enabled"] or settings["emergency"]:
+                continue
+
+            # فقط یک ورود در هر کندل بسته‌شده
+            candle_time = candles[-1]["time"]
+
+            if last_candle.get(symbol) == candle_time:
+                continue
+
+            if result["direction"] == "BUY":
+                paper_buy(symbol, result)
+                last_candle[symbol] = candle_time
+
+        except Exception as exc:
+            log.warning("%s market error: %s", symbol, exc)
+
+
+async def engine_loop():
+    while True:
+        try:
+            await asyncio.to_thread(process_market)
+        except Exception:
+            log.exception("Engine cycle failed")
+
+        await asyncio.sleep(LOOP_SECONDS)
+
+
+@app.on_event("startup")
+async def start_engine():
+    init_db()
+    asyncio.create_task(engine_loop())
+
+
+# =====================================================
+# API حساب و بازار
+# =====================================================
+
+@app.get("/api/status")
+def status():
+    settings = get_settings()
+    positions = open_positions()
+
+    return {
+        "name": APP_NAME,
+        "enabled": bool(settings["enabled"]),
+        "emergency": bool(settings["emergency"]),
+        "mode": "PAPER",
+        "real_trading": False,
+        "cash_toman": round(settings["cash"], 2),
+        "initial_toman": settings["initial_balance"],
+        "open_positions": len(positions),
+        "symbols": SYMBOLS,
+        "timeframe": TIMEFRAME
+    }
+
+
+@app.get("/api/market")
+def market():
+    return {
+        "market": market_cache,
+        "signals": signal_cache
+    }
+
+
+@app.get("/api/trades")
+def trades():
+    con = db()
+    rows = con.execute(
+        "SELECT * FROM trades ORDER BY id DESC LIMIT 200"
+    ).fetchall()
+    con.close()
+    return [dict(x) for x in rows]
+
+
+@app.get("/api/summary")
+def summary():
+    con = db()
+
+    closed = con.execute("""
+        SELECT COUNT(*) AS total,
+               COALESCE(SUM(pnl),0) AS pnl,
+               SUM(CASE WHEN pnl > 0 THEN 1 ELSE 0 END) AS wins
+        FROM trades WHERE status='CLOSED'
+    """).fetchone()
+
+    opened = con.execute("""
+        SELECT COUNT(*) AS total
+        FROM trades WHERE status='OPEN'
+    """).fetchone()
+
+    con.close()
+
+    total = closed["total"] or 0
+    wins = closed["wins"] or 0
+
+    return {
+        "closed_trades": total,
+        "open_trades": opened["total"],
+        "net_pnl_toman": round(closed["pnl"], 2),
+        "win_rate_percent": round(
+            wins / total * 100, 2
+        ) if total else 0
+    }
+
+
+# =====================================================
+# کنترل ربات
+# =====================================================
+
+@app.post("/api/start")
+def start_bot():
+    update_settings(enabled=1, emergency=0)
+    return {"message": "ربات آزمایشی فعال شد"}
+
+
+@app.post("/api/pause")
+def pause_bot():
+    update_settings(enabled=0)
+    return {"message": "ورودهای جدید متوقف شد"}
+
+
+@app.post("/api/emergency")
+def emergency_stop():
+    update_settings(enabled=0, emergency=1)
+    return {
+        "message": "توقف اضطراری فعال شد؛ ورود جدید ممنوع است"
+    }
+
+
+@app.post("/api/emergency/reset")
+def reset_emergency():
+    update_settings(emergency=0, enabled=0)
+    return {
+        "message": "توقف اضطراری بازنشانی شد؛ ربات همچنان خاموش است"
+    }
+
+
+# =====================================================
+# داشبورد فارسی
+# =====================================================
+
+HTML = r"""
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#09111f">
-<title>MAHORA AI V19</title>
+<title>MAHORA AI</title>
 <style>
-:root{--bg:#09111f;--panel:#121e30;--panel2:#0c1727;--line:#293950;--txt:#edf3fc;--muted:#91a3bc;--green:#20d6a0;--red:#ff637c;--gold:#e9c16f;--blue:#78a7ff}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:Tahoma,Arial,sans-serif;font-size:13px}
-header{padding:22px 16px;background:linear-gradient(125deg,#1b3452,#101a2b);border-bottom:1px solid var(--line)}
-.brand{font-size:24px;font-weight:900;letter-spacing:1px;color:var(--gold)}
-.subtitle{color:var(--muted);font-size:10px;margin-top:7px;letter-spacing:1px}
-.status{display:flex;align-items:center;gap:8px;margin-top:14px;color:var(--green)}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
-main{max-width:1050px;margin:auto;padding:13px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:15px;margin-bottom:13px}
-h3{font-size:14px;margin:0 0 14px}
-.muted,small{color:var(--muted)}
-small{font-size:10px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.price{font-size:26px;font-weight:bold;margin:13px 0}
-.gold{color:var(--gold)}.green{color:var(--green)}.red{color:var(--red)}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.metric{background:var(--panel2);padding:13px;border-radius:10px;min-width:0}
-.metric strong{display:block;font-size:17px;margin-top:8px;overflow-wrap:anywhere}
-select,input,button{font:inherit;color:var(--txt);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px}
-select,input{width:100%;margin:6px 0 12px}
-button{cursor:pointer}
-button.primary{background:#12694f;border:0}
-button.danger{background:#752c3d;border:0}
-button:disabled{opacity:.4;cursor:not-allowed}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.actions button{flex:1}
-.pill{padding:6px 9px;border-radius:20px;background:#263851;font-size:10px}
-table{width:100%;border-collapse:collapse;font-size:11px}
-td,th{padding:10px 4px;text-align:center;border-bottom:1px solid var(--line)}
-th{color:var(--muted)}
-.bar{height:7px;border-radius:10px;background:#26364c;overflow:hidden;margin-top:9px}
-.bar span{display:block;height:100%;width:0;background:var(--green)}
-.log{font-size:11px;color:var(--muted);padding:9px 2px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
-canvas{width:100%;height:160px}
-.note{background:#2a2418;border:1px solid #594a2d;padding:11px;border-radius:9px;color:#e9d4a5;line-height:1.9;font-size:11px}
-footer{text-align:center;color:var(--muted);padding:20px;font-size:11px;line-height:2}
-@media(min-width:650px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+body{margin:0;background:#0b1020;color:#eef2ff;
+font-family:Tahoma,Arial,sans-serif}
+header{padding:20px;background:#121a2e;border-bottom:1px solid #26334d}
+h1{margin:0;color:#e5bd70;font-size:24px}
+small{color:#9eacc5}
+main{max-width:1100px;margin:auto;padding:15px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.card{background:#151f35;border:1px solid #263653;
+border-radius:14px;padding:15px;margin-bottom:12px}
+.label{color:#9eacc5;font-size:12px}
+.value{font-size:21px;font-weight:bold;margin-top:8px}
+button{border:0;border-radius:9px;padding:12px 15px;
+font-weight:bold;margin:4px;cursor:pointer}
+.start{background:#13875e;color:white}
+.pause{background:#d39a36;color:#111}
+.stop{background:#c83c50;color:white}
+.reset{background:#435777;color:white}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td,th{padding:10px;border-bottom:1px solid #293651;text-align:right}
+.green{color:#42d69a}
+.red{color:#ff697d}
+.status{color:#e5bd70}
+.section{margin-top:22px}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header>
- <div class="brand">MAHORA AI <span>V19</span></div>
- <div class="subtitle">ADVANCED MULTI-TIMEFRAME PAPER TRADING</div>
- <div class="status"><span class="dot"></span><span id="connection">در حال اتصال به بازار...</span></div>
+<h1>MAHORA AI</h1>
+<small>سامانه هوشمند معاملات آزمایشی</small>
 </header>
 <main>
- <section class="card">
-  <div class="row"><h3>بازار معاملاتی</h3><span class="pill">PAPER ONLY</span></div>
-  <select id="symbol">
-   <option value="BTCUSDT">بیت‌کوین BTC</option>
-   <option value="ETHUSDT">اتریوم ETH</option>
-   <option value="XRPUSDT">ریپل XRP</option>
-   <option value="BNBUSDT">بایننس کوین BNB</option>
-   <option value="SOLUSDT">سولانا SOL</option>
-   <option value="DOGEUSDT">دوج‌کوین DOGE</option>
-   <option value="PEPEUSDT">پپه PEPE</option>
-  </select>
-  <div class="muted">قیمت لحظه‌ای (USDT)</div>
-  <div class="price" id="price">---</div>
-  <div id="change" class="muted">در انتظار داده بازار</div>
-  <small id="updated">آخرین دریافت: ---</small>
- </section>
+<div class="card">
+<div class="label">وضعیت موتور معاملاتی</div>
+<div class="value status" id="state">در حال اتصال...</div>
+<div class="label">حالت: آزمایشی | تایم‌فریم: ۱۵ دقیقه</div>
+</div>
 
- <section class="grid">
-  <div class="metric"><span class="muted">سرمایه آزمایشی</span><strong id="balance">۱۰٬۰۰۰٬۰۰۰</strong><small>تومان</small></div>
-  <div class="metric"><span class="muted">سود و زیان بسته‌شده</span><strong id="closedPnl">۰</strong><small>تومان</small></div>
-  <div class="metric"><span class="muted">معاملات باز</span><strong id="openCount">۰</strong></div>
-  <div class="metric"><span class="muted">سرمایه درگیر</span><strong id="exposure">۰</strong><small>تومان</small></div>
- </section>
+<div class="grid">
+<div class="card">
+<div class="label">موجودی نقدی (تومان)</div>
+<div class="value" id="cash">—</div>
+</div>
+<div class="card">
+<div class="label">سرمایه اولیه (تومان)</div>
+<div class="value" id="initial">—</div>
+</div>
+<div class="card">
+<div class="label">معاملات باز</div>
+<div class="value" id="opened">—</div>
+</div>
+<div class="card">
+<div class="label">سود و زیان خالص بسته‌شده</div>
+<div class="value" id="pnl">—</div>
+</div>
+<div class="card">
+<div class="label">تعداد معاملات بسته</div>
+<div class="value" id="closed">—</div>
+</div>
+<div class="card">
+<div class="label">درصد معاملات سودده</div>
+<div class="value" id="winrate">—</div>
+</div>
+</div>
 
- <section class="card">
-  <h3>تنظیمات سرمایه و تبدیل ارز</h3>
-  <label>نرخ هر تتر به تومان</label>
-  <input id="fx" type="number" min="1" step="1000" placeholder="مثلاً ۱۰۰۰۰۰">
-  <small>نرخ را از منبع مورد اعتماد خودت وارد کن. نرخ پیش‌فرضی در نظر گرفته نشده است.</small>
-  <div class="note" style="margin-top:12px">تا وقتی نرخ تبدیل وارد نشده باشد، سیستم فقط تحلیل می‌کند و معامله آزمایشی جدید باز نمی‌کند.</div>
- </section>
+<div class="card">
+<h3>کنترل ربات</h3>
+<button class="start" onclick="action('/api/start')">شروع معاملات آزمایشی</button>
+<button class="pause" onclick="action('/api/pause')">توقف ورود جدید</button>
+<button class="stop" onclick="action('/api/emergency')">توقف اضطراری</button>
+<button class="reset" onclick="action('/api/emergency/reset')">بازنشانی توقف</button>
+<div id="message" class="label"></div>
+</div>
 
- <section class="card">
-  <h3>نمودار قیمت</h3>
-  <canvas id="chart" width="900" height="260"></canvas>
-  <small>نمایش تغییرات قیمت دریافتی در همین نشست</small>
- </section>
+<div class="section card">
+<h3>بازار و سیگنال‌ها</h3>
+<table>
+<thead><tr><th>ارز</th><th>قیمت USDT</th><th>سیگنال</th><th>توافق</th></tr></thead>
+<tbody id="market"></tbody>
+</table>
+</div>
 
- <section class="card">
-  <h3>موتور تحلیل سه تایم‌فریم</h3>
-  <div class="grid">
-   <div class="metric"><span>۵ دقیقه</span><strong id="tf5">WAIT</strong></div>
-   <div class="metric"><span>۱۵ دقیقه</span><strong id="tf15">WAIT</strong></div>
-   <div class="metric"><span>۱ ساعت</span><strong id="tf60">WAIT</strong></div>
-   <div class="metric"><span>تصمیم نهایی</span><strong id="decision">WAIT</strong></div>
-  </div>
-  <div class="row" style="margin-top:15px"><span class="muted">قدرت توافق سه تایم‌فریم</span><strong id="agreement">۰٪</strong></div>
-  <div class="bar"><span id="agreementBar"></span></div>
-  <p class="muted" id="analysisInfo">در انتظار تکمیل تحلیل...</p>
- </section>
+<div class="section card">
+<h3>معاملات اخیر</h3>
+<table>
+<thead><tr><th>ارز</th><th>ورود</th><th>خروج</th><th>وضعیت</th><th>سود/زیان تومان</th></tr></thead>
+<tbody id="trades"></tbody>
+</table>
+</div>
 
- <section class="card">
-  <h3>۱۰ استراتژی تحلیلی</h3>
-  <table>
-   <thead><tr><th>استراتژی</th><th>۵m</th><th>۱۵m</th><th>۱h</th></tr></thead>
-   <tbody id="strategyRows"></tbody>
-  </table>
-  <small>سیگنال‌ها بر اساس آخرین کندل بسته‌شده محاسبه می‌شوند.</small>
- </section>
-
- <section class="card">
-  <h3>مدیریت ریسک</h3>
-  <div class="grid">
-   <div class="metric"><span>ریسک هر معامله</span><strong>۱٪</strong></div>
-   <div class="metric"><span>حداکثر معاملات باز</span><strong>۳</strong></div>
-   <div class="metric"><span>سقف سرمایه درگیر</span><strong>۳۰٪</strong></div>
-   <div class="metric"><span>کارمزد فرضی هر طرف</span><strong>۰٫۱٪</strong></div>
-  </div>
-  <p class="muted">حد ضرر با فاصله ۱٫۵ برابر ATR و حد سود با نسبت ریسک به بازده ۲ به ۱ محاسبه می‌شود.</p>
- </section>
-
- <section class="card">
-  <div class="row"><h3>معاملات خودکار آزمایشی</h3><span class="pill gold">REAL TRADING OFF</span></div>
-  <div class="actions">
-   <button class="primary" id="autoBtn">فعال‌سازی Paper Trading</button>
-   <button class="danger" id="emergencyBtn">توقف اضطراری</button>
-  </div>
-  <p id="autoStatus" class="muted">ربات خاموش است.</p>
-  <small>فقط شبیه‌سازی؛ هیچ سفارش واقعی ارسال نمی‌شود.</small>
- </section>
-
- <section class="card">
-  <div class="row"><h3>معاملات باز</h3><button id="closeAll">بستن همه معاملات</button></div>
-  <div id="positions" class="muted">معامله بازی وجود ندارد.</div>
- </section>
-
- <section class="card">
-  <h3>تاریخچه معاملات</h3>
-  <div id="history" class="muted">تاریخچه خالی است.</div>
- </section>
-
- <section class="card">
-  <h3>گزارش سیستم</h3>
-  <div id="logs"></div>
- </section>
-
- <footer>MAHORA AI V19 · PAPER TRADING ONLY<br>هیچ نرخ برد یا سودی تضمین نمی‌شود.</footer>
+<div class="label" style="padding:20px;text-align:center">
+MAHORA AI — فقط Paper Trading؛ سفارش واقعی غیرفعال است.
+</div>
 </main>
+
 <script>
-"use strict";
+const fmt = n => Number(n||0).toLocaleString('fa-IR',{maximumFractionDigits:2});
 
-/* MAHORA AI V19 - Browser-based paper trading prototype.
-   No real exchange orders. Public Binance market data only. */
-
-const $=id=>document.getElementById(id);
-const API="https://api.binance.com/api/v3";
-const INITIAL_CAPITAL=10000000;
-const FEE_RATE=0.001;
-const RISK_RATE=0.01;
-const MAX_POSITIONS=3;
-const MAX_EXPOSURE=0.30;
-const MAX_TRADE_EXPOSURE=0.10;
-const TIMEFRAMES=["5m","15m","1h"];
-const STRATEGIES=["EMA Trend","RSI","MACD","Bollinger","Stochastic","Breakout","Volume","Momentum","ATR","Candle"];
-const STORAGE_KEY="MAHORA_AI_V19_PAPER";
-
-let price=0,market={},analysis={},historyPrices=[];
-let auto=false,requestBusy=false,lastDecisionCandle="";
-let balance=INITIAL_CAPITAL,positions=[],closedTrades=[],logs=[];
-let fx=0;
-
-const number=n=>Number(n||0).toLocaleString("fa-IR",{maximumFractionDigits:0});
-const decimal=n=>Number(n||0).toLocaleString("en-US",{maximumFractionDigits:6});
-const sideLabel=s=>s==="BUY"?"خرید":s==="SELL"?"فروش":"خنثی";
-const safe=(v)=>String(v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-
-function log(message){
- logs.unshift(new Date().toLocaleTimeString("fa-IR")+" - "+message);
- logs=logs.slice(0,25);
- $("logs").innerHTML=logs.map(x=>'<div class="log">'+safe(x)+'</div>').join("");
+async function api(path,method='GET'){
+ const r=await fetch(path,{method});
+ if(!r.ok) throw new Error('خطای ارتباط با سرور');
+ return await r.json();
 }
 
-function saveState(){
+async function action(path){
  try{
-  localStorage.setItem(STORAGE_KEY,JSON.stringify({
-   balance,positions,closedTrades,fx
-  }));
- }catch(e){log("ذخیره‌سازی مرورگر در دسترس نیست")}
-}
-
-function loadState(){
- try{
-  const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
-  if(!s)return;
-  if(Number.isFinite(s.balance)&&s.balance>0)balance=s.balance;
-  if(Array.isArray(s.positions))positions=s.positions;
-  if(Array.isArray(s.closedTrades))closedTrades=s.closedTrades;
-  if(Number.isFinite(s.fx)&&s.fx>0)fx=s.fx;
- }catch(e){log("اطلاعات ذخیره‌شده قابل بازیابی نبود")}
- $("fx").value=fx||"";
-}
-
-function ema(values,period){
- if(values.length<period)return null;
- const k=2/(period+1);
- let value=values[0];
- for(let i=1;i<values.length;i++)value=values[i]*k+value*(1-k);
- return value;
-}
-
-function average(values){
- return values.reduce((a,b)=>a+b,0)/values.length;
-}
-
-function rsi(values,period=14){
- if(values.length<period+1)return 50;
- let gain=0,loss=0;
- for(let i=values.length-period;i<values.length;i++){
-  const d=values[i]-values[i-1];
-  if(d>0)gain+=d;else loss-=d;
+  const r=await api(path,'POST');
+  document.getElementById('message').textContent=r.message;
+  await refresh();
+ }catch(e){
+  document.getElementById('message').textContent=e.message;
  }
- if(loss===0)return gain===0?50:100;
- return 100-100/(1+gain/loss);
 }
 
-function atr(data,period=14){
- if(data.length<period+1)return 0;
- let ranges=[];
- for(let i=data.length-period;i<data.length;i++){
-  const c=data[i],prev=data[i-1];
-  ranges.push(Math.max(c.h-c.l,Math.abs(c.h-prev.c),Math.abs(c.l-prev.c)));
- }
- return average(ranges);
-}
-
-function macd(values){
- if(values.length<35)return 0;
- return ema(values.slice(-35),12)-ema(values.slice(-35),26);
-}
-
-function analyzeCandles(data){
- if(!data||data.length<60)throw Error("تعداد کندل کافی نیست");
- const c=data.slice(0,-1); // آخرین کندل ناتمام حذف می‌شود
- if(c.length<55)throw Error("کندل بسته‌شده کافی نیست");
-
- const closes=c.map(x=>x.c);
- const last=c[c.length-1],prev=c[c.length-2];
- const e12=ema(closes.slice(-50),12);
- const e26=ema(closes.slice(-50),26);
- const r=rsi(closes);
- const m=macd(closes);
- const mean=average(closes.slice(-20));
- const sd=Math.sqrt(average(closes.slice(-20).map(x=>(x-mean)**2)));
- const upper=mean+2*sd,lower=mean-2*sd;
- const recent=c.slice(-14);
- const low14=Math.min(...recent.map(x=>x.l));
- const high14=Math.max(...recent.map(x=>x.h));
- const momentum=last.c-closes[closes.length-5];
- const volumeAvg=average(c.slice(-21,-1).map(x=>x.v));
- const volatility=atr(c);
- const candleRange=last.h-last.l||1;
- const stochastic=100*(last.c-low14)/(high14-low14||1);
-
- const signals=[
-  e12>e26&&last.c>e12?"BUY":e12<e26&&last.c<e12?"SELL":"WAIT",
-  r<30?"BUY":r>70?"SELL":"WAIT",
-  m>0&&m>macd(closes.slice(0,-1))?"BUY":m<0&&m<macd(closes.slice(0,-1))?"SELL":"WAIT",
-  last.c<lower?"BUY":last.c>upper?"SELL":"WAIT",
-  stochastic<20?"BUY":stochastic>80?"SELL":"WAIT",
-  last.c>Math.max(...c.slice(-21,-1).map(x=>x.h))?"BUY":
-   last.c<Math.min(...c.slice(-21,-1).map(x=>x.l))?"SELL":"WAIT",
-  last.v>volumeAvg*1.5?(last.c>last.o?"BUY":last.c<last.o?"SELL":"WAIT"):"WAIT",
-  momentum>0?"BUY":momentum<0?"SELL":"WAIT",
-  last.c>prev.c+volatility?"BUY":last.c<prev.c-volatility?"SELL":"WAIT",
-  last.c>last.o&&last.c>prev.h?"BUY":
-   last.c<last.o&&last.c<prev.l?"SELL":"WAIT"
- ];
-
- const buys=signals.filter(x=>x==="BUY").length;
- const sells=signals.filter(x=>x==="SELL").length;
- const direction=buys>=6?"BUY":sells>=6?"SELL":"WAIT";
-
- return {signals,buys,sells,direction,atr:volatility,
-  candleTime:last.time,close:last.c};
-}
-
-async function fetchCandles(symbol,interval){
- const response=await fetch(`${API}/klines?symbol=${symbol}&interval=${interval}&limit=100`);
- if(!response.ok)throw Error("خطا در دریافت کندل "+interval);
- const rows=await response.json();
- return rows.map(x=>({
-  time:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]
- }));
-}
-
-async function refreshMarket(){
- if(requestBusy)return;
- requestBusy=true;
+async function refresh(){
  try{
-  const symbol=$("symbol").value;
-  const results=await Promise.all([
-   ...TIMEFRAMES.map(tf=>fetchCandles(symbol,tf)),
-   fetch(`${API}/ticker/price?symbol=${symbol}`).then(r=>{
-    if(!r.ok)throw Error("خطای دریافت قیمت");
-    return r.json();
-   }),
-   fetch(`${API}/ticker/24hr?symbol=${symbol}`).then(r=>{
-    if(!r.ok)throw Error("خطای آمار بازار");
-    return r.json();
-   })
+  const [s,m,t,p]=await Promise.all([
+   api('/api/status'),
+   api('/api/market'),
+   api('/api/trades'),
+   api('/api/summary')
   ]);
 
-  market={
-   "5m":results[0],
-   "15m":results[1],
-   "1h":results[2]
-  };
-  price=Number(results[3].price);
-  const ticker=results[4];
+  document.getElementById('state').textContent=
+   s.emergency?'توقف اضطراری':
+   s.enabled?'فعال — آزمایشی':'متوقف';
 
-  if(!Number.isFinite(price)||price<=0)throw Error("قیمت نامعتبر");
+  document.getElementById('cash').textContent=fmt(s.cash_toman);
+  document.getElementById('initial').textContent=fmt(s.initial_toman);
+  document.getElementById('opened').textContent=fmt(p.open_trades);
+  document.getElementById('closed').textContent=fmt(p.closed_trades);
+  document.getElementById('pnl').textContent=fmt(p.net_pnl_toman);
+  document.getElementById('winrate').textContent=fmt(p.win_rate_percent)+'٪';
 
-  $("price").textContent=decimal(price)+" USDT";
-  const change=Number(ticker.priceChangePercent);
-  $("change").textContent="تغییر ۲۴ ساعت: "+change.toFixed(2)+"٪";
-  $("change").className=change>=0?"green":"red";
-  $("updated").textContent="آخرین دریافت: "+new Date().toLocaleTimeString("fa-IR");
-  $("connection").textContent="اتصال قیمت برقرار";
-  historyPrices.push(price);
-  historyPrices=historyPrices.slice(-100);
-  drawChart();
+  const marketRows=Object.entries(m.market||{}).map(([symbol,x])=>{
+   const signal=m.signals?.[symbol];
+   const dir=signal?.direction||'WAIT';
+   const cls=dir==='BUY'?'green':dir==='SELL'?'red':'';
+   return `<tr><td>${symbol}</td><td>${fmt(x.price)}</td>
+   <td class="${cls}">${dir}</td>
+   <td>${fmt(signal?.agreement||0)} از ۱۰</td></tr>`;
+  }).join('');
 
-  runAnalysis();
- }catch(error){
-  $("connection").textContent="خطا در دریافت داده بازار";
-  log(error.message);
- }finally{
-  requestBusy=false;
+  document.getElementById('market').innerHTML=
+   marketRows||'<tr><td colspan="4">در انتظار دریافت داده بازار...</td></tr>';
+
+  document.getElementById('trades').innerHTML=
+   t.slice(0,30).map(x=>`
+   <tr>
+   <td>${x.symbol}</td>
+   <td>${fmt(x.entry)}</td>
+   <td>${x.exit?fmt(x.exit):'—'}</td>
+   <td>${x.status==='OPEN'?'باز':'بسته'}</td>
+   <td class="${x.pnl>=0?'green':'red'}">${fmt(x.pnl)}</td>
+   </tr>`).join('')||'<tr><td colspan="5">هنوز معامله‌ای ثبت نشده است</td></tr>';
+
+ }catch(e){
+  document.getElementById('state').textContent='ارتباط با سرور برقرار نیست';
  }
 }
 
-function runAnalysis(){
- try{
-  for(const tf of TIMEFRAMES)analysis[tf]=analyzeCandles(market[tf]);
-
-  const a=analysis;
-  $("tf5").textContent=a["5m"].direction;
-  $("tf15").textContent=a["15m"].direction;
-  $("tf60").textContent=a["1h"].direction;
-
-  const directions=TIMEFRAMES.map(tf=>a[tf].direction);
-  const unanimous=directions.every(x=>x==="BUY")||directions.every(x=>x==="SELL");
-  const decision=unanimous?directions[0]:"WAIT";
-
-  $("decision").textContent=decision;
-  const agreement=unanimous?100:Math.round(
-   Math.max(...["BUY","SELL"].map(s=>directions.filter(x=>x===s).length))/3*100
-  );
-  $("agreement").textContent=agreement+"٪";
-  $("agreementBar").style.width=agreement+"%";
-
-  $("analysisInfo").textContent=unanimous?
-   "هر سه تایم‌فریم هم‌جهت هستند؛ شرایط سیگنال فراهم است.":
-   "تایم‌فریم‌ها توافق ندارند؛ ورود جدید صادر نمی‌شود.";
-
-  $("strategyRows").innerHTML=STRATEGIES.map((name,i)=>
-   `<tr><td>${name}</td>${TIMEFRAMES.map(tf=>
-    `<td class="${analysis[tf].signals[i]==="BUY"?"green":analysis[tf].signals[i]==="SELL"?"red":""}">${analysis[tf].signals[i]}</td>`
-   ).join("")}</tr>`
-  ).join("");
-
-  managePositions();
-
-  const stamp=market["15m"].slice(-2)[0].time;
-  if(auto&&unanimous&&stamp!==lastDecisionCandle){
-   lastDecisionCandle=stamp;
-   openPaper(decision);
-  }
-  render();
- }catch(error){
-  $("analysisInfo").textContent="تحلیل کامل نشد: "+error.message;
-  log("خطای تحلیل: "+error.message);
- }
-}
-
-function openPaper(side){
- if(!auto)return;
- if(!fx||fx<=0){log("ورود متوقف شد: نرخ تبدیل تتر وارد نشده است");return}
- if(positions.length>=MAX_POSITIONS){log("سقف تعداد معاملات باز پر شده است");return}
- if(!price||!analysis["15m"]?.atr)return;
-
- const equity=balance+unrealizedPnl();
- const riskCash=equity*RISK_RATE;
- const stopDistance=analysis["15m"].atr*1.5;
- if(stopDistance<=0)return;
-
- const qtyByRisk=riskCash/(stopDistance*fx);
- const maxTradeToman=equity*MAX_TRADE_EXPOSURE;
- const maxTotalToman=equity*MAX_EXPOSURE;
- const currentExposure=positions.reduce((s,p)=>s+p.qty*p.entry*p.fx,0);
- const available=Math.max(0,Math.min(maxTradeToman,maxTotalToman-currentExposure));
- const qty=Math.min(qtyByRisk,available/(price*fx));
-
- if(!Number.isFinite(qty)||qty<=0){log("حجم مجاز معامله کافی نیست");return}
-
- const notional=qty*price*fx;
- const entryFee=notional*FEE_RATE;
- const stop=side==="BUY"?price-stopDistance:price+stopDistance;
- const target=side==="BUY"?price+stopDistance*2:price-stopDistance*2;
-
- if(balance<entryFee){log("سرمایه برای کارمزد کافی نیست");return}
- balance-=entryFee;
-
- positions.push({
-  side,entry:price,qty,fx,stop,target,entryFee,
-  notional,openedAt:Date.now(),symbol:$("symbol").value
- });
-
- log("معامله آزمایشی "+side+" باز شد؛ ارزش "+number(notional)+" تومان");
- saveState();render();
-}
-
-function unrealizedPnl(){
- return positions.reduce((sum,p)=>{
-  const gross=(price-p.entry)*p.qty*(p.side==="BUY"?1:-1)*p.fx;
-  const exitFee=price*p.qty*p.fx*FEE_RATE;
-  return sum+gross-exitFee;
- },0);
-}
-
-function closePosition(index,reason){
- const p=positions[index];
- if(!p||!price)return;
-
- const gross=(price-p.entry)*p.qty*(p.side==="BUY"?1:-1)*p.fx;
- const exitFee=price*p.qty*p.fx*FEE_RATE;
- const pnl=gross-p.entryFee-exitFee;
-
- // Entry fee was deducted at opening; add gross profit/loss and deduct exit fee.
- balance+=gross-exitFee;
-
- closedTrades.unshift({
-  side:p.side,entry:p.entry,exit:price,qty:p.qty,
-  pnl,reason,time:Date.now(),symbol:p.symbol
- });
- positions.splice(index,1);
- log("معامله بسته شد: "+reason+" | "+number(pnl)+" تومان");
- saveState();render();
-}
-
-function managePositions(){
- for(let i=positions.length-1;i>=0;i--){
-  const p=positions[i];
-  const hitStop=p.side==="BUY"?price<=p.stop:price>=p.stop;
-  const hitTarget=p.side==="BUY"?price>=p.target:price<=p.target;
-  if(hitStop)closePosition(i,"STOP LOSS");
-  else if(hitTarget)closePosition(i,"TAKE PROFIT");
- }
-}
-
-function render(){
- const pnl=closedTrades.reduce((s,t)=>s+t.pnl,0);
- const exposure=positions.reduce((s,p)=>s+p.notional,0);
-
- $("balance").textContent=number(balance);
- $("closedPnl").textContent=number(pnl);
- $("closedPnl").className=pnl>=0?"green":"red";
- $("openCount").textContent=number(positions.length);
- $("exposure").textContent=number(exposure);
-
- $("positions").innerHTML=positions.length?positions.map((p,i)=>`
-  <div class="log">
-   <b>${p.symbol} · ${sideLabel(p.side)}</b><br>
-   ورود: ${decimal(p.entry)} USDT<br>
-   حد ضرر: ${decimal(p.stop)} · حد سود: ${decimal(p.target)}<br>
-   <button onclick="closePosition(${i},'MANUAL')">بستن آزمایشی</button>
-  </div>`).join(""):"معامله بازی وجود ندارد.";
-
- $("history").innerHTML=closedTrades.length?closedTrades.slice(0,30).map(t=>`
-  <div class="log">
-   ${t.symbol} · ${sideLabel(t.side)} · ورود ${decimal(t.entry)} · خروج ${decimal(t.exit)}
-   <br><b class="${t.pnl>=0?"green":"red"}">${number(t.pnl)} تومان</b>
-   · ${safe(t.reason)} · ${new Date(t.time).toLocaleString("fa-IR")}
-  </div>`).join(""):"تاریخچه خالی است.";
-}
-
-function drawChart(){
- const canvas=$("chart"),ctx=canvas.getContext("2d");
- const w=canvas.width,h=canvas.height;
- ctx.clearRect(0,0,w,h);
- if(historyPrices.length<2)return;
- const min=Math.min(...historyPrices),max=Math.max(...historyPrices);
- const range=max-min||1;
- ctx.beginPath();ctx.lineWidth=3;ctx.strokeStyle="#20d6a0";
- historyPrices.forEach((v,i)=>{
-  const x=15+i*(w-30)/(historyPrices.length-1);
-  const y=h-15-(v-min)/range*(h-30);
-  if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
- });
- ctx.stroke();
-}
-
-$("fx").addEventListener("change",()=>{
- const v=Number($("fx").value);
- fx=Number.isFinite(v)&&v>0?v:0;
- $("fx").value=fx||"";
- saveState();
- log(fx?"نرخ تبدیل ثبت شد":"نرخ تبدیل پاک شد");
-});
-
-$("autoBtn").onclick=()=>{
- if(!auto&&!fx){
-  $("autoStatus").textContent="ابتدا نرخ هر تتر به تومان را وارد کن.";
-  log("فعال‌سازی رد شد: نرخ تبدیل نامشخص است");
-  return;
- }
- auto=!auto;
- $("autoBtn").textContent=auto?"خاموش کردن معاملات خودکار":"فعال‌سازی Paper Trading";
- $("autoStatus").textContent=auto?
-  "Paper Trading فعال است؛ فقط سیگنال هم‌جهت سه تایم‌فریم بررسی می‌شود.":
-  "ربات خاموش است.";
- log(auto?"Paper Trading فعال شد":"Paper Trading خاموش شد");
-};
-
-$("emergencyBtn").onclick=()=>{
- auto=false;
- $("autoBtn").textContent="فعال‌سازی Paper Trading";
- $("autoStatus").textContent="توقف اضطراری: ورود جدید متوقف شد؛ معاملات باز همچنان پایش می‌شوند.";
- log("توقف اضطراری فعال شد");
-};
-
-$("closeAll").onclick=()=>{
- for(let i=positions.length-1;i>=0;i--)closePosition(i,"CLOSE ALL");
-};
-
-$("symbol").onchange=()=>{
- lastDecisionCandle="";
- historyPrices=[];
- log("بازار معاملاتی تغییر کرد");
- refreshMarket();
-};
-
-loadState();
-render();
-log("MAHORA AI V19 راه‌اندازی شد");
-refreshMarket();
-setInterval(refreshMarket,15000);
+refresh();
+setInterval(refresh,10000);
 </script>
 </body>
 </html>
+"""
+
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard():
+    return HTML
+
+
+# =====================================================
+# اجرای مستقیم برای توسعه
+# =====================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000
+    )
